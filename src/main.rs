@@ -57,8 +57,13 @@ fn main() {
         menu::file::exit::handle_exit();
     });
 
-    // Other menus as stubs for now
-    menu.add("&Edit/", Shortcut::None, MenuFlag::Normal, |_| {});
+    
+    let frame_crop = frame.clone();
+let state_crop = state.clone();
+menu.add("&Edit/&Crop", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::crop::handle_crop(&frame_crop, &state_crop);
+});
+// Other menus as stubs for now
     menu.add("&View/", Shortcut::None, MenuFlag::Normal, |_| {});
     menu.add("&Image/", Shortcut::None, MenuFlag::Normal, |_| {});
     menu.add("&Info/", Shortcut::None, MenuFlag::Normal, |_| {});

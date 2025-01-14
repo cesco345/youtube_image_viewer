@@ -50,11 +50,13 @@ pub fn handle_save_as(_frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState
 }
 
 fn save_image(image: &fltk::image::RgbImage, path: &PathBuf) -> bool {
-    // Convert FLTK image to image crate format
-    let width = image.data_w() as u32;
-    let height = image.data_h() as u32;
+    // Use data dimensions instead of display dimensions
+    let width = image.data_w() as u32;     // Changed from width()
+    let height = image.data_h() as u32;    // Changed from height()
     let data = image.to_rgb_data();
-    
+
+    println!("Saving image with dimensions: {}x{}", width, height);
+
     if let Some(img_buffer) = image::RgbImage::from_raw(width, height, data) {
         let format = match path.extension().and_then(|ext| ext.to_str()) {
             Some("jpg") | Some("jpeg") => Some(ImageFormat::Jpeg),
@@ -64,13 +66,20 @@ fn save_image(image: &fltk::image::RgbImage, path: &PathBuf) -> bool {
         };
 
         if let Some(format) = format {
-            if let Err(e) = img_buffer.save_with_format(path, format) {
-                println!("Failed to save image: {}", e);
-                return false;
+            // Add quality settings for JPEG
+            if format == ImageFormat::Jpeg {
+                if let Err(e) = img_buffer.save_with_format(path, format) {
+                    println!("Failed to save image: {}", e);
+                    return false;
+                }
+            } else {
+                if let Err(e) = img_buffer.save_with_format(path, format) {
+                    println!("Failed to save image: {}", e);
+                    return false;
+                }
             }
+            println!("Successfully saved image with dimensions: {}x{}", width, height);
             return true;
-        } else {
-            println!("Unsupported file format");
         }
     }
     false
