@@ -1,3 +1,4 @@
+// main.rs
 mod menu;
 mod state;
 mod utils;
@@ -9,9 +10,8 @@ use fltk::{
     prelude::*,
     window::Window,
     enums::Shortcut,
-    dialog::{FileDialog, FileDialogType, alert, message},
 };
-use std::{cell::RefCell, path::PathBuf, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 use state::ImageState;
 use utils::MENU_HEIGHT;
 
@@ -57,13 +57,15 @@ fn main() {
         menu::file::exit::handle_exit();
     });
 
-    
+    // Edit menu
     let frame_crop = frame.clone();
-let state_crop = state.clone();
-menu.add("&Edit/&Crop", Shortcut::None, MenuFlag::Normal, move |_| {
-    menu::edit::crop::handle_crop(&frame_crop, &state_crop);
-});
-// Other menus as stubs for now
+    let state_crop = state.clone();
+    menu.add("&Edit/&Cropping Images", Shortcut::None, MenuFlag::Normal, move |_| {
+        menu::edit::crop::start_interactive_crop(&frame_crop, &state_crop);
+    });
+    
+
+    // Other menus
     menu.add("&View/", Shortcut::None, MenuFlag::Normal, |_| {});
     menu.add("&Image/", Shortcut::None, MenuFlag::Normal, |_| {});
     menu.add("&Info/", Shortcut::None, MenuFlag::Normal, |_| {});
