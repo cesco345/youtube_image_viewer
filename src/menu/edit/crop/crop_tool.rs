@@ -136,8 +136,8 @@ fn handle_crop_with_selection(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Ima
         state_ref.crop_selection = None;
         drop(state_ref);
         
-        let mut frame_mut = frame.borrow_mut();
-        display_image(&mut frame_mut, &mut fltk_image, 1.0);
+        
+        display_image(frame, &fltk_image, 1.0);
         true
     } else {
         alert(300, 300, "Failed to create cropped image");
@@ -268,8 +268,8 @@ pub fn start_interactive_crop(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Ima
                                         
                                         // Display original image
                                         if let Some(img) = &original_image {
-                                            let mut frame_mut = frame_clone.borrow_mut();
-                                            display_image(&mut frame_mut, &mut img.clone(), 1.0);
+                                            
+                                            display_image(&frame_clone, img, 1.0);
                                         }
                                     }
                                 }

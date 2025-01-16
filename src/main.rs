@@ -64,6 +64,30 @@ fn main() {
         menu::edit::crop::start_interactive_crop(&frame_crop, &state_crop);
     });
     
+    // Watermark menu items
+    let frame_add = frame.clone();
+    let state_add = state.clone();
+    menu.add("&Edit/&Watermark/&Add Watermark", Shortcut::None, MenuFlag::Normal, move |_| {
+        menu::edit::watermark::dialog::show_watermark_dialog(&frame_add, &state_add);
+    });
+
+    let frame_edit = frame.clone();
+    let state_edit = state.clone();
+    menu.add("&Edit/&Watermark/&Edit Watermark", Shortcut::None, MenuFlag::Normal, move |_| {
+        menu::edit::watermark::handle_edit_watermark(&frame_edit, &state_edit);
+    });
+
+    let frame_remove = frame.clone();
+    let state_remove = state.clone();
+    menu.add("&Edit/&Watermark/&Remove Watermark", Shortcut::None, MenuFlag::Normal, move |_| {
+        menu::edit::watermark::handle_remove_watermark(&frame_remove, &state_remove);
+    });
+
+    let frame_preview = frame.clone();
+    let state_preview = state.clone();
+    menu.add("&Edit/&Watermark/Toggle &Preview", Shortcut::None, MenuFlag::Normal, move |_| {
+        menu::edit::watermark::handle_toggle_preview(&frame_preview, &state_preview);
+    });
 
     // Other menus
     menu.add("&View/", Shortcut::None, MenuFlag::Normal, |_| {});

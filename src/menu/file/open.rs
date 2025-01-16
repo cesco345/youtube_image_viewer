@@ -1,5 +1,7 @@
+// menu/file/open.rs
+
 use crate::state::ImageState;
-use crate::utils::display_image;
+use crate::utils::display_image_with_zoom;
 use fltk::{
     dialog::{FileDialog, FileDialogType},
     frame::Frame,
@@ -25,8 +27,7 @@ pub fn handle_open(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) 
                 let mut state = state_open.borrow_mut();
                 state.path = Some(PathBuf::from(filename));
                 state.zoom = 1.0;
-                let mut frame = frame_open.borrow_mut();
-                display_image(&mut frame, &mut fltk_image, state.zoom);
+                display_image_with_zoom(&frame_open, &mut fltk_image, state.zoom);
                 state.image = Some(fltk_image);
             } else {
                 println!("Failed to convert image to FLTK format: {}", filename);
