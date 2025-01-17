@@ -4,6 +4,16 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use chrono::{DateTime, Utc};
 
+#[derive(Clone)]
+pub struct RemovalArea {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+}
+
+
+
 mod blend;
 pub mod dialog;
 mod fonts;
@@ -12,6 +22,8 @@ pub mod image_watermark;
 mod position;
 mod templates;
 pub mod text_watermark;
+pub mod removal_tool;
+
 
 // Re-export everything needed externally
 pub use blend::{BlendMode};

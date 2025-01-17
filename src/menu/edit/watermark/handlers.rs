@@ -2,6 +2,7 @@ use fltk::{frame::Frame, prelude::*};
 use std::{rc::Rc, cell::RefCell, path::PathBuf};
 use crate::state::ImageState;
 use super::{
+    dialog,
     image_watermark::ImageWatermark,
     text_watermark::TextWatermark,
     WatermarkOptions,
@@ -39,7 +40,7 @@ pub fn handle_add_watermark_from_path(
             repeat: false,
         };
 
-        state_ref.watermark_state.current_options = options;
+        state_ref.watermark_state.set_options(options);
         
         println!("Attempting to load watermark from: {:?}", watermark_path);
         
@@ -92,12 +93,12 @@ pub fn handle_add_text_watermark(
             repeat: false,
         };
 
-        state_ref.watermark_state.current_options = options;
+        state_ref.watermark_state.set_options(options);
         
         match TextWatermark::new(text, Rgba([0, 0, 0, 255]), 32.0) {
             Ok(watermark) => {
                 println!("Created text watermark");
-                state_ref.watermark_state.set_text_watermark(watermark);  // Changed this line
+                state_ref.watermark_state.set_text_watermark(watermark);
                 
                 if let Ok(Some(new_image)) = state_ref.watermark_state.apply_watermark(&current_image) {
                     println!("Successfully applied text watermark");
@@ -114,43 +115,56 @@ pub fn handle_add_text_watermark(
 }
 
 pub fn handle_add_watermark(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
-    // Keep original function for backward compatibility
-    let default_path = PathBuf::from("./images/waterrmark1.jpg");
+    let default_path = PathBuf::from("./images/watermark1.jpg");
     handle_add_watermark_from_path(frame, state, default_path);
 }
 
-pub fn handle_edit_watermark(_frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
-    if let Ok(state) = state.try_borrow() {
-        if state.watermark_state.get_current_template().is_some() {
-            println!("Edit watermark functionality coming soon!");
+pub fn handle_edit_watermark(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
+    if let Ok(state_ref) = state.try_borrow() {
+        if state_ref.watermark_state.has_watermark() {
+            drop(state_ref); // Release borrow before showing dialog
+            dialog::show_edit_watermark_dialog(frame, state);
+        } else {
+            println!("No watermark to edit");
         }
     }
 }
 
 pub fn handle_remove_watermark(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
-    if let Ok(mut state) = state.try_borrow_mut() {
-        state.reset_watermark();
-        if let Some(image) = &state.image {
-            frame.borrow_mut().set_image(Some(image.clone()));
-            frame.borrow_mut().redraw();
-        }
-    }
+    println!("Starting watermark removal tool");
+    super::removal_tool::start_watermark_removal(frame, state);
 }
 
 pub fn handle_toggle_preview(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
-    if let Ok(mut state) = state.try_borrow_mut() {
-        let preview_active = state.watermark_state.is_preview_active();
-        state.watermark_state.toggle_preview();
+    if let Ok(mut state_ref) = state.try_borrow_mut() {
+        let preview_active = state_ref.watermark_state.is_preview_active();
+        let current_zoom = state_ref.zoom;
+        state_ref.watermark_state.toggle_preview();
         
-        if let Some(ref image) = state.image.clone() {
+        if let Some(ref image) = state_ref.image.clone() {
             if preview_active {
-                frame.borrow_mut().set_image(Some(image.clone()));
+                // Reload original image when disabling preview
+                if let Some(path) = &state_ref.path {
+                    if let Ok(img) = image::open(path) {
+                        let fltk_image = fltk::image::RgbImage::new(
+                            &img.to_rgb8().into_raw(),
+                            img.width() as i32,
+                            img.height() as i32,
+                            fltk::enums::ColorDepth::Rgb8
+                        ).unwrap();
+                        
+                        // Use display_image to maintain proper scaling
+                        crate::utils::image::display_image(frame, &fltk_image, current_zoom);
+                        state_ref.image = Some(fltk_image);
+                        return;
+                    }
+                }
+                crate::utils::image::display_image(frame, image, current_zoom);
             } else {
-                if let Ok(Some(preview_image)) = state.watermark_state.apply_watermark(image) {
-                    frame.borrow_mut().set_image(Some(preview_image));
+                if let Ok(Some(preview_image)) = state_ref.watermark_state.apply_watermark(image) {
+                    crate::utils::image::display_image(frame, &preview_image, current_zoom);
                 }
             }
-            frame.borrow_mut().redraw();
         }
     }
 }
