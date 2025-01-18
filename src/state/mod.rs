@@ -1,12 +1,13 @@
-// src/state/mod.rs
-
 use fltk::image::RgbImage;
 use std::path::PathBuf;
 use crate::menu::edit::crop::CropSelection;
 use crate::menu::edit::watermark::WatermarkOptions;
 
 mod watermark_state;
+mod filter_state;
+
 pub use watermark_state::{WatermarkState, WatermarkError};
+pub use filter_state::{FilterState, FilterError};
 
 #[derive(Clone)]
 pub struct ImageState {
@@ -15,6 +16,7 @@ pub struct ImageState {
     pub path: Option<PathBuf>,
     pub crop_selection: Option<CropSelection>,
     pub watermark_state: WatermarkState,
+    pub filter_state: FilterState,
 }
 
 impl ImageState {
@@ -25,6 +27,7 @@ impl ImageState {
             path: None,
             crop_selection: None,
             watermark_state: WatermarkState::new(),
+            filter_state: FilterState::new(),
         }
     }
 
@@ -45,5 +48,14 @@ impl ImageState {
 
     pub fn list_watermark_templates(&self) -> Result<Vec<String>, WatermarkError> {
         self.watermark_state.list_templates()
+    }
+
+    pub fn update_filter_preview(&mut self) -> Result<(), FilterError> {
+        self.filter_state.toggle_preview();
+        Ok(())
+    }
+
+    pub fn reset_filter(&mut self) {
+        self.filter_state = FilterState::new();
     }
 }

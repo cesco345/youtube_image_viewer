@@ -123,14 +123,14 @@ impl WatermarkState {
             return Ok(Some(image.clone()));
         }
     
-        // Increase sample size for better color matching
-        let sample_size = 15; // Increased from 5
+        // sample size for better color matching
+        let sample_size = 15; // 
         let mut samples = Vec::new();
     
-        // Sample from a larger area around the watermark
+        // sample from a larger area around the watermark
         for sample_y in (y - sample_size).max(0)..=(y + height + sample_size).min(image_buffer.height() as i32 - 1) {
             for sample_x in (x - sample_size).max(0)..=(x + width + sample_size).min(image_buffer.width() as i32 - 1) {
-                // Only sample from outside the removal area
+                // start sampling from outside the removal area
                 if sample_x < x || sample_x >= x + width || sample_y < y || sample_y >= y + height {
                     samples.push((
                         sample_x,
