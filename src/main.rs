@@ -136,6 +136,49 @@ fn main() {
        menu::edit::filters::show_filter_dialog(&frame_basic_hue, &state_basic_hue, "hue");
    });
 
+   // advanced filters
+let frame_advanced_gaussian = frame.clone();
+let state_advanced_gaussian = state.clone();
+menu.add("&Edit/&Filters/&Advanced/&Convolution", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_gaussian, &state_advanced_gaussian, "gaussian_blur");
+});
+
+let frame_advanced_edge = frame.clone();
+let state_advanced_edge = state.clone();
+menu.add("&Edit/&Filters/&Advanced/&Edge Detection", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_edge, &state_advanced_edge, "edge_detection");
+});
+
+let frame_advanced_noise = frame.clone();
+let state_advanced_noise = state.clone();
+menu.add("&Edit/&Filters/&Advanced/&Noise", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_noise, &state_advanced_noise, "noise");
+});
+
+let frame_advanced_vignette = frame.clone();
+let state_advanced_vignette = state.clone();
+menu.add("&Edit/&Filters/&Advanced/&Vignette", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_vignette, &state_advanced_vignette, "vignette");
+});
+
+let frame_advanced_posterize = frame.clone();
+let state_advanced_posterize = state.clone();
+menu.add("&Edit/&Filters/&Advanced/&Posterize", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_posterize, &state_advanced_posterize, "posterize");
+});
+
+let frame_advanced_pixelate = frame.clone();
+let state_advanced_pixelate = state.clone();
+menu.add("&Edit/&Filters/&Advanced/Pi&xelate", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_pixelate, &state_advanced_pixelate, "pixelate");
+});
+
+let frame_advanced_motion = frame.clone();
+let state_advanced_motion = state.clone();
+menu.add("&Edit/&Filters/&Advanced/&Motion Blur", Shortcut::None, MenuFlag::Normal, move |_| {
+    menu::edit::filters::show_filter_dialog(&frame_advanced_motion, &state_advanced_motion, "motion_blur");
+});
+
    // filters Preview Toggle
    let frame_preview = frame.clone();
    let state_preview = state.clone();

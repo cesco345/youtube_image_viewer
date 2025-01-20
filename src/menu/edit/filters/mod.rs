@@ -1,14 +1,40 @@
-pub mod basic;
-mod handlers;
-mod dialog;
-
-pub use handlers::*;
-pub use dialog::*;
-
-use fltk::image::RgbImage;
-use fltk::prelude::*; // Add this for ImageExt trait
+// External crate imports
 use image::{ImageBuffer, Rgba};
+use fltk::image::RgbImage;
+use fltk::prelude::*;
+
+// Internal imports
 use crate::state::FilterError;
+
+// Module declarations - public modules
+pub mod basic;
+pub mod advanced;
+pub mod handlers;
+pub mod dialog;
+
+// Module declarations - private modules
+mod pixelate_tool;
+mod convolution_tool;
+mod edge_detection_tool;
+mod noise_tool;
+mod vignette_tool;
+mod posterize_tool;
+mod motion_blur_tool;
+
+// Public re-exports
+pub use dialog::show_filter_dialog;
+pub use handlers::*;
+pub use pixelate_tool::start_interactive_pixelate;
+pub use convolution_tool::start_interactive_convolution;
+pub use edge_detection_tool::start_interactive_edge_detection;
+pub use noise_tool::start_interactive_noise;
+pub use vignette_tool::start_interactive_vignette;
+pub use posterize_tool::start_interactive_posterize;
+pub use motion_blur_tool::start_interactive_motion_blur;
+
+pub use advanced::{ConvolutionType, EdgeDetectionMethod};  // Re-export from advanced module
+
+
 
 pub trait ImageFilter {
     fn apply(&self, image: &mut ImageBuffer<Rgba<u8>, Vec<u8>>) -> Result<(), FilterError>;
