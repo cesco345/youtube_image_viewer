@@ -1,13 +1,18 @@
+//! this is the filter state management module that handles image filtering operations
+//! and maintains the state of active filters and previews.
+
 use fltk::image::RgbImage;
-use fltk::prelude::*;  // Add this import for ImageExt trait
+use fltk::prelude::*;  // in order to be able to import for ImageExt trait
 use image::{ImageBuffer, Rgba};
 use crate::menu::edit::filters::ImageFilter;
 
+/// represents an error that can occur during the filtering process in human readable format
 #[derive(Clone, Debug)]
-pub struct FilterError {
+pub struct FilterError {   
     pub message: String,
 }
 
+// implement the Display trait for FilterError and return the error message to be used with std::error::Error down below
 impl std::fmt::Display for FilterError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.message)
@@ -17,20 +22,23 @@ impl std::fmt::Display for FilterError {
 impl std::error::Error for FilterError {}
 
 #[derive(Clone)]
+// image conversin between fltk and image crate formats
 pub struct FilterState {
     is_preview_active: bool,
     current_filter: Option<String>,
 }
-
+// implement the FilterState struct
 impl FilterState {
+    // create a new instance of FilterState
     pub fn new() -> Self {
         Self {
             is_preview_active: false,
             current_filter: None,
         }
     }
-
+// apply a filter to an image and return the result
     pub fn apply_filter<F: ImageFilter>(&self, image: &RgbImage, filter: &F) -> Result<Option<RgbImage>, FilterError> {
+        // convert the fltk image to image buffer
         let mut image_buffer = Self::fltk_to_image_buffer(image);
         filter.apply(&mut image_buffer)?;
         Ok(Self::image_buffer_to_fltk(&image_buffer))
@@ -89,7 +97,7 @@ impl FilterState {
         self.current_filter = filter;
     }
 }
-
+// implement Default trait and allow creating a new instance of FilterState with default values
 impl Default for FilterState {
     fn default() -> Self {
         Self::new()

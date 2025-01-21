@@ -2,5 +2,6 @@
 pub mod crop;
 pub mod watermark;
 pub mod filters;
+pub mod layers;
 
 

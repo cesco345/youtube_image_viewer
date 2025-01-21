@@ -1,3 +1,4 @@
+// src/state/mod.rs
 use fltk::image::RgbImage;
 use std::path::PathBuf;
 use crate::menu::edit::crop::CropSelection;
@@ -5,18 +6,21 @@ use crate::menu::edit::watermark::WatermarkOptions;
 
 mod watermark_state;
 mod filter_state;
+mod layer_state;
 
 pub use watermark_state::{WatermarkState, WatermarkError};
 pub use filter_state::{FilterState, FilterError};
+pub use layer_state::LayerState;
 
 #[derive(Clone)]
 pub struct ImageState {
     pub image: Option<RgbImage>,
-    pub zoom: f64,
+    pub zoom: f64,  // Changed from f32 to f64
     pub path: Option<PathBuf>,
     pub crop_selection: Option<CropSelection>,
     pub watermark_state: WatermarkState,
     pub filter_state: FilterState,
+    pub layer_state: LayerState,
 }
 
 impl ImageState {
@@ -28,6 +32,7 @@ impl ImageState {
             crop_selection: None,
             watermark_state: WatermarkState::new(),
             filter_state: FilterState::new(),
+            layer_state: LayerState::new(),
         }
     }
 
@@ -57,5 +62,9 @@ impl ImageState {
 
     pub fn reset_filter(&mut self) {
         self.filter_state = FilterState::new();
+    }
+
+    pub fn reset_layers(&mut self) {
+        self.layer_state = LayerState::new();
     }
 }

@@ -178,7 +178,16 @@ let state_advanced_motion = state.clone();
 menu.add("&Edit/&Filters/&Advanced/&Motion Blur", Shortcut::None, MenuFlag::Normal, move |_| {
     menu::edit::filters::show_filter_dialog(&frame_advanced_motion, &state_advanced_motion, "motion_blur");
 });
-
+let frame_layer = frame.clone();
+let state_layer = state.clone();
+menu.add(
+    "&Edit/&Layers",  // Change from "&Layer Manager" to "&Layers"
+    Shortcut::None,
+    MenuFlag::Normal,
+    move |_| {
+        menu::edit::layers::show_new_layer_dialog(&frame_layer, &state_layer);
+    }
+);
    // filters Preview Toggle
    let frame_preview = frame.clone();
    let state_preview = state.clone();
@@ -211,6 +220,7 @@ menu.add("&Edit/&Filters/&Advanced/&Motion Blur", Shortcut::None, MenuFlag::Norm
        let widget_theme = WidgetTheme::new(ThemeType::Classic);
        widget_theme.apply();
    });
+
 
    // other menus
    menu.add("&Image/", Shortcut::None, MenuFlag::Normal, |_| {});
