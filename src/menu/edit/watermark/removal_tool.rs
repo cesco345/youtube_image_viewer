@@ -116,7 +116,7 @@ pub fn start_watermark_removal(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Im
                 &frame.borrow(),
                 image.data_w(),
                 image.data_h(),
-                state_ref.zoom
+                state_ref.zoom.into()
             );
         }
     }

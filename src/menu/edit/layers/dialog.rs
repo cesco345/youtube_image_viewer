@@ -1,94 +1,192 @@
-// src/menu/edit/layers/dialog.rs
 use fltk::{
     window::Window,
-    button::Button,
+    button::{Button, CheckButton},
     frame::Frame,
-    group::Pack,
+    group::{Pack, Scroll, PackType},
     menu::Choice,
     prelude::*,
+    enums::{Color, FrameType},
 };
 use std::{rc::Rc, cell::RefCell};
 use crate::state::ImageState;
-use super::color_tool::start_interactive_color;
 
-pub fn show_new_layer_dialog(
-    frame: &Rc<RefCell<Frame>>, 
-    state: &Rc<RefCell<ImageState>>
-) -> bool {
-    let mut dialog = Window::default()
-        .with_size(400, 380)
-        .with_label("Add New Layer");
-    dialog.make_modal(true);
+pub fn show_new_layer_dialog(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) -> bool {
+    if let Ok(mut state_ref) = state.try_borrow_mut() {
+        if state_ref.image.is_none() {
+            return false;
+        }
+        state_ref.layer_state.update_groups();
+    }
 
-    let mut pack = Pack::new(10, 10, 380, 360, "");
-    pack.set_spacing(10);
+    let window = Window::default()
+        .with_size(300, 400)
+        .with_label("Layer Manager");
+    let window = Rc::new(RefCell::new(window));
+    window.borrow_mut().make_modal(true);
 
-    // Title and Instructions
-    Frame::default()
-        .with_size(380, 25)
-        .with_label("Create New Color Layer")
-        .with_pos(0, 0);
+    let scroll = Scroll::new(10, 10, 280, 340, "");
+    scroll.begin();
+    
+    let mut pack = Pack::new(0, 0, 260, 340, "");
+    pack.set_spacing(5);
 
-    let instruction_text = "1. Select a color below\n2. Click Apply\n3. Click and drag on the image to select the area\n4. Repeat for additional areas with the same color";
-    Frame::default()
-        .with_size(380, 80)
-        .with_label(instruction_text)
-        .with_pos(0, 35);
-
-    // Color selection
-    Frame::default()
-        .with_size(380, 25)
-        .with_label("Select Color:")
-        .with_pos(0, 125);
-
-    let mut color_choice = Choice::new(20, 150, 180, 25, "");
-    color_choice.add_choice("Red|Green|Blue|Yellow|Purple|Cyan");
-    color_choice.set_value(0);  // Default to Red
-
-    let dialog_rc = Rc::new(RefCell::new(dialog));
-    let result = Rc::new(RefCell::new(false));
-
-    let mut cancel = Button::new(190, 320, 85, 25, "Cancel");
-    let mut apply = Button::new(285, 320, 85, 25, "Apply");
+    if let Ok(state_ref) = state.try_borrow() {
+        // Add groups first
+        for (group_id, group) in state_ref.layer_state.get_groups().iter().enumerate() {
+            add_group_widget(&mut pack, group_id, group, state.clone(), frame.clone());
+            // Add layers under each group
+            for &layer_index in &group.layer_indices {
+                if let Some(layer) = state_ref.layer_state.get_layer(layer_index) {
+                    add_layer_widget(&mut pack, layer_index, layer, state.clone(), frame.clone());
+                }
+            }
+        }
+    }
 
     pack.end();
-    dialog_rc.borrow_mut().end();
+    scroll.end();
 
-    let dialog_rc_cancel = dialog_rc.clone();
-    cancel.set_callback(move |_| {
-        dialog_rc_cancel.borrow_mut().hide();
-    });
+    let mut color_choice = Choice::new(10, 360, 100, 25, "");
+    color_choice.add_choice("Red|Green|Blue|Yellow|Purple");
+    color_choice.set_value(0);
 
-    let dialog_rc_ok = dialog_rc.clone();
-    let frame_rc = frame.clone();
-    let state_rc = state.clone();
-    let result_rc = result.clone();
-
-    apply.set_callback(move |_| {
+    let mut add_btn = Button::new(120, 360, 70, 25, "Add");
+    let state_clone = state.clone();
+    let frame_clone = frame.clone();
+    let window_clone = window.clone();
+    
+    add_btn.set_callback(move |_| {
         let color = match color_choice.value() {
-            0 => (255, 0, 0),      // Red
-            1 => (0, 255, 0),      // Green
-            2 => (0, 0, 255),      // Blue
-            3 => (255, 255, 0),    // Yellow
-            4 => (255, 0, 255),    // Purple
-            5 => (0, 255, 255),    // Cyan
-            _ => (255, 0, 0),      // Default to Red
+            0 => (255, 0, 0),    
+            1 => (0, 255, 0),    
+            2 => (0, 0, 255),    
+            3 => (255, 255, 0),  
+            4 => (255, 0, 255),  
+            _ => (255, 0, 0),    
         };
-
-        // Hide dialog before starting interactive selection
-        dialog_rc_ok.borrow_mut().hide();
-
-        // Start interactive color area selection
-        start_interactive_color(&frame_rc, &state_rc, color);
-        
-        *result_rc.borrow_mut() = true;
+        window_clone.borrow_mut().hide();
+        super::handlers::handle_create_layer(&frame_clone, &state_clone, color);
     });
 
-    dialog_rc.borrow_mut().show();
-    while dialog_rc.borrow().shown() {
+    let mut close_btn = Button::new(200, 360, 70, 25, "Close");
+    let window_clone = window.clone();
+    let state_clone = state.clone();
+    let frame_clone = frame.clone();
+
+    close_btn.set_callback(move |_| {
+        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
+            while state_ref.layer_state.get_layer_count() > 0 {
+                state_ref.layer_state.remove_layer(0);
+            }
+            
+            if let Some(original) = state_ref.layer_state.get_original_image() {
+                let original_image = original.clone();
+                state_ref.image = Some(original_image.clone());
+                frame_clone.borrow_mut().set_image(Some(original_image));
+                frame_clone.borrow_mut().redraw();
+            }
+        }
+        window_clone.borrow_mut().hide();
+    });
+
+    window.borrow_mut().end();
+    window.borrow_mut().show();
+
+    while window.borrow().shown() {
         fltk::app::wait();
     }
 
-    let return_value = *result.borrow();
-    return_value
+    true
+}
+
+fn add_group_widget(
+    pack: &mut Pack,
+    group_id: usize,
+    group: &crate::state::LayerGroup,
+    state: Rc<RefCell<ImageState>>,
+    frame: Rc<RefCell<Frame>>
+) {
+    let mut group_pack = Pack::new(0, 0, 260, 30, "");
+    group_pack.set_type(PackType::Horizontal);
+    group_pack.set_spacing(5);
+
+    let mut visibility_check = CheckButton::new(0, 0, 30, 30, "");
+    visibility_check.set_value(group.visible);
+    let state_clone = state.clone();
+    let frame_clone = frame.clone();
+    
+    visibility_check.set_callback(move |btn| {
+        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
+            state_ref.layer_state.set_group_visibility(group_id, btn.value());
+            if let Some(composite) = state_ref.layer_state.get_composite_image() {
+                state_ref.image = Some(composite.clone());
+                frame_clone.borrow_mut().set_image(Some(composite));
+                frame_clone.borrow_mut().redraw();
+            }
+        }
+    });
+
+    let mut color_preview = Frame::new(35, 0, 30, 30, "");
+    color_preview.set_frame(FrameType::FlatBox);
+    color_preview.set_color(Color::from_rgb(group.color.0, group.color.1, group.color.2));
+
+    Frame::new(70, 0, 120, 30, &*group.name);
+    
+    group_pack.end();
+}
+
+fn add_layer_widget(
+    pack: &mut Pack,
+    index: usize,
+    layer: &crate::state::Layer,
+    state: Rc<RefCell<ImageState>>,
+    frame: Rc<RefCell<Frame>>
+) {
+    let mut layer_pack = Pack::new(20, 0, 240, 30, "");  // Indented to show hierarchy
+    layer_pack.set_type(PackType::Horizontal);
+    layer_pack.set_spacing(5);
+
+    let mut visibility_check = CheckButton::new(0, 0, 30, 30, "");
+    visibility_check.set_value(layer.visible);
+    let state_clone = state.clone();
+    let frame_clone = frame.clone();
+    visibility_check.set_callback(move |btn| {
+        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
+            state_ref.layer_state.set_layer_visibility(index, btn.value());
+            if let Some(composite) = state_ref.layer_state.get_composite_image() {
+                state_ref.image = Some(composite.clone());
+                frame_clone.borrow_mut().set_image(Some(composite));
+                frame_clone.borrow_mut().redraw();
+            }
+        }
+    });
+
+    let mut color_preview = Frame::new(35, 0, 30, 30, "");
+    color_preview.set_frame(FrameType::FlatBox);
+    color_preview.set_color(Color::from_rgb(layer.color.0, layer.color.1, layer.color.2));
+
+    Frame::new(70, 0, 100, 30, &*layer.name);
+
+    let mut delete_btn = Button::new(180, 0, 30, 30, "@1+");
+    let state_clone = state.clone();
+    let frame_clone = frame.clone();
+    delete_btn.set_callback(move |_| {
+        if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
+            if state_ref.layer_state.remove_layer(index) {
+                if let Some(original) = state_ref.layer_state.get_original_image() {
+                    if state_ref.layer_state.get_layer_count() == 0 {
+                        let original_image = original.clone();
+                        state_ref.image = Some(original_image.clone());
+                        frame_clone.borrow_mut().set_image(Some(original_image));
+                    } else if let Some(composite) = state_ref.layer_state.get_composite_image() {
+                        state_ref.image = Some(composite.clone());
+                        frame_clone.borrow_mut().set_image(Some(composite));
+                    }
+                    frame_clone.borrow_mut().redraw();
+                }
+            }
+        }
+    });
+
+    layer_pack.end();
 }

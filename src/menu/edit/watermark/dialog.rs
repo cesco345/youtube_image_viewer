@@ -12,6 +12,7 @@ use std::{rc::Rc, cell::RefCell, path::PathBuf};
 use crate::state::ImageState;
 use super::{BlendMode, WatermarkPosition, Position};
 
+// First dialog remains unchanged
 pub fn show_watermark_dialog(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) -> bool {
     let mut dialog = Window::default()
         .with_size(400, 300)
@@ -135,12 +136,14 @@ pub fn show_edit_watermark_dialog(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell
     dialog.make_modal(true);
 
     let current_options = {
-        let state_ref = state.borrow();
-        let has_watermark = state_ref.watermark_state.has_watermark();
-        if !has_watermark {
+        if let Ok(state_ref) = state.try_borrow() {
+            if !state_ref.watermark_state.has_watermark() {
+                return false;
+            }
+            state_ref.watermark_state.get_current_options()
+        } else {
             return false;
         }
-        state_ref.get_watermark_options()
     };
 
     let mut pack = Pack::new(10, 10, 380, 380, "");

@@ -27,7 +27,7 @@ pub fn handle_open(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) 
                 let mut state = state_open.borrow_mut();
                 state.path = Some(PathBuf::from(filename));
                 state.zoom = 1.0;
-                display_image_with_zoom(&frame_open, &mut fltk_image, state.zoom);
+                display_image_with_zoom(&frame_open, &mut fltk_image, state.zoom.into());
                 state.image = Some(fltk_image);
             } else {
                 println!("Failed to convert image to FLTK format: {}", filename);

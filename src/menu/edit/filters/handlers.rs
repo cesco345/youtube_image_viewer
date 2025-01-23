@@ -371,12 +371,12 @@ pub fn handle_toggle_preview(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                             fltk::enums::ColorDepth::Rgb8
                         ).unwrap();
                         
-                        crate::utils::image::display_image(frame, &fltk_image, current_zoom);
+                        crate::utils::image::display_image(frame, &fltk_image, current_zoom.into());
                         state_ref.image = Some(fltk_image);
                         return;
                     }
                 }
-                crate::utils::image::display_image(frame, image, current_zoom);
+                crate::utils::image::display_image(frame, image, current_zoom.into());
             }
         }
     }

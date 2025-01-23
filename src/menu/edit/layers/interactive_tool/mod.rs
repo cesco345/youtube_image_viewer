@@ -10,7 +10,8 @@ use fltk::{
 use std::{cell::RefCell, rc::Rc};
 use crate::state::ImageState;
 use crate::menu::edit::crop::crop_tool::CropSelection;
-use super::color_layer_filter::ColorLayerFilter;
+use super::color_filter::ColorFilter;
+
 
 pub fn start_interactive_layer(
     frame: &Rc<RefCell<Frame>>, 
@@ -36,7 +37,7 @@ pub fn start_interactive_layer(
         ));
     }
     drop(state_ref);
-
+    let filter = ColorFilter::new(color);
     let frame_clone = frame.clone();
     let state_clone = state.clone();
     let mut frame = frame.borrow_mut();
@@ -130,7 +131,7 @@ pub fn start_interactive_layer(
                             if let (Some(selection), Some(current_image)) = 
                                 (state.crop_selection.as_ref(), &state.image) {
                                 
-                                let filter = ColorLayerFilter::new(color)
+                                let filter = ColorFilter::new(color)
                                     .with_selection(selection.clone())
                                     .with_feather(5)
                                     .with_opacity(0.5);

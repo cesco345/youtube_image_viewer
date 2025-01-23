@@ -181,11 +181,22 @@ menu.add("&Edit/&Filters/&Advanced/&Motion Blur", Shortcut::None, MenuFlag::Norm
 let frame_layer = frame.clone();
 let state_layer = state.clone();
 menu.add(
-    "&Edit/&Layers",  // Change from "&Layer Manager" to "&Layers"
+    "&Edit/&Layers/&Layer Manager",  // Main layers dialog
     Shortcut::None,
     MenuFlag::Normal,
     move |_| {
         menu::edit::layers::show_new_layer_dialog(&frame_layer, &state_layer);
+    }
+);
+
+let frame_layer_preview = frame.clone();
+let state_layer_preview = state.clone();
+menu.add(
+    "&Edit/&Layers/Toggle &Preview",  // Toggle preview option
+    Shortcut::None,
+    MenuFlag::Normal,
+    move |_| {
+        menu::edit::layers::handle_toggle_preview(&frame_layer_preview, &state_layer_preview);
     }
 );
    // filters Preview Toggle

@@ -154,15 +154,15 @@ pub fn handle_toggle_preview(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                         ).unwrap();
                         
                         // Use display_image to maintain proper scaling
-                        crate::utils::image::display_image(frame, &fltk_image, current_zoom);
+                        crate::utils::image::display_image(frame, &fltk_image, current_zoom.into());
                         state_ref.image = Some(fltk_image);
                         return;
                     }
                 }
-                crate::utils::image::display_image(frame, image, current_zoom);
+                crate::utils::image::display_image(frame, image, current_zoom.into());
             } else {
                 if let Ok(Some(preview_image)) = state_ref.watermark_state.apply_watermark(image) {
-                    crate::utils::image::display_image(frame, &preview_image, current_zoom);
+                    crate::utils::image::display_image(frame, &preview_image, current_zoom.into());
                 }
             }
         }
