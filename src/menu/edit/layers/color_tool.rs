@@ -216,7 +216,7 @@ pub fn start_interactive_color(
                                         layer.opacity = 0.8;
                                     }
                                     
-                                    // Keep the selection active for next area
+                                    // here it keeps the selection active for next area
                                     state.crop_selection = Some(CropSelection::new(
                                         displayed_w,
                                         displayed_h,

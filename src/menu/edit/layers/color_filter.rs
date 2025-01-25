@@ -102,7 +102,7 @@ impl ImageFilter for ColorFilter {
     }
 }
 impl ColorFilter {
-    // Add this method to support opacity
+    // this method exists to support opacity
     pub fn with_opacity(mut self, opacity: f32) -> Self {
         self.intensity = opacity.clamp(0.0, 1.0);
         self

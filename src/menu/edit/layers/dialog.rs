@@ -31,10 +31,10 @@ pub fn show_new_layer_dialog(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
     pack.set_spacing(5);
 
     if let Ok(state_ref) = state.try_borrow() {
-        // Add groups first
+        // create and add groups first
         for (group_id, group) in state_ref.layer_state.get_groups().iter().enumerate() {
             add_group_widget(&mut pack, group_id, group, state.clone(), frame.clone());
-            // Add layers under each group
+            // create and add layers under each group
             for &layer_index in &group.layer_indices {
                 if let Some(layer) = state_ref.layer_state.get_layer(layer_index) {
                     add_layer_widget(&mut pack, layer_index, layer, state.clone(), frame.clone());
