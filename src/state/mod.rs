@@ -1,3 +1,5 @@
+//src/state/mod.rs
+
 use fltk::image::RgbImage;
 use std::path::PathBuf;
 use crate::menu::edit::crop::crop_tool::CropSelection;

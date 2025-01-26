@@ -4,8 +4,9 @@ use crate::scientific::{
     layers::{Channel, Annotation, AnnotationType,Metadata, Calibration},
     analysis::{IntensityProfile},
     calibration::SpatialCalibration,    
-    types::{ROIShape, ROITool, MeasurementTool},
+    types::{ROIShape, ROITool, MeasurementTool, LegendPosition},
 };
+
 
 pub struct ScientificState {
     pub channels: Vec<Channel>,
@@ -19,10 +20,14 @@ pub struct ScientificState {
     pub current_measurement_points: Vec<(i32, i32)>,
     pub show_overlay: bool,
     pub calibrations: Vec<Calibration>,
+    pub show_legend: bool,
+    pub legend_position: LegendPosition,
+
 }
 
 impl ScientificState {
     pub fn new() -> Self {
+        println!("Initializing ScientificState with show_legend=true");  // Debug print
         Self {
             channels: Vec::new(),
             annotations: Vec::new(),
@@ -35,6 +40,46 @@ impl ScientificState {
             current_measurement_points: Vec::new(),
             show_overlay: true,
             calibrations: Vec::new(),
+            show_legend: false,  // Add default value
+            legend_position: LegendPosition::BottomRight,
+        }
+    }
+    pub fn toggle_legend(&mut self) {
+        self.show_legend = !self.show_legend;
+        
+        // Update visibility of scale annotations while preserving other annotations
+        for annotation in &mut self.annotations {
+            if let AnnotationType::Scale { .. } = annotation.annotation_type {
+                annotation.visible = self.show_legend;
+            }
+        }
+    }
+    pub fn set_legend_position(&mut self, position: LegendPosition) {
+        self.legend_position = position;
+        // Update existing scale bar positions
+        if let Some(channel) = self.channels.first() {
+            let width = channel.image.data_w();
+            let height = channel.image.data_h();
+            
+            let (x_offset, y_offset) = match self.legend_position {
+                LegendPosition::TopLeft => (20, 20),
+                LegendPosition::TopRight => (width - 120, 20),
+                LegendPosition::BottomLeft => (20, height - 50),
+                LegendPosition::BottomRight => (width - 120, height - 50),
+            };
+
+            // Update coordinates for existing scale annotations
+            for annotation in &mut self.annotations {
+                if let AnnotationType::Scale { .. } = annotation.annotation_type {
+                    if annotation.coordinates.len() >= 2 {
+                        let scale_length = annotation.coordinates[1].0 - annotation.coordinates[0].0;
+                        annotation.coordinates = vec![
+                            (x_offset, y_offset),
+                            (x_offset + scale_length, y_offset)
+                        ];
+                    }
+                }
+            }
         }
     }
 
@@ -100,20 +145,29 @@ impl ScientificState {
     }
 
     pub fn get_composite_image(&self) -> Option<RgbImage> {
-        if self.channels.is_empty() {
+        // Get dimensions from first channel
+        let (width, height) = if let Some(first) = self.channels.first() {
+            (first.image.data_w(), first.image.data_h())
+        } else {
             return None;
-        }
+        };
     
-        let first = &self.channels[0].image;
-        let mut composite = first.to_rgb_data();
-        let (width, height) = (first.data_w(), first.data_h());
+        // Start with the first channel's image data instead of a blank image
+        let mut composite = if let Some(first_channel) = self.channels.first() {
+            if first_channel.visible {
+                first_channel.image.to_rgb_data()
+            } else {
+                vec![0u8; (width * height * 3) as usize]
+            }
+        } else {
+            vec![0u8; (width * height * 3) as usize]
+        };
     
-        // Blend visible channels
-        for channel in self.channels.iter().filter(|c| c.visible) {
+        // Blend remaining visible channels starting from the second one
+        for channel in self.channels.iter().skip(1).filter(|c| c.visible) {
             self.blend_channel(&mut composite, channel);
         }
     
-        // Create single overlay for all annotations
         if self.show_overlay {
             let mut overlay = composite.clone();
             
@@ -122,7 +176,6 @@ impl ScientificState {
                 self.overlay_annotation(&mut overlay, annotation);
             }
     
-            // Draw any in-progress ROI
             if !self.current_roi_points.is_empty() && self.roi_tool.is_some() {
                 self.draw_in_progress(&mut overlay, width, height, &self.current_roi_points, (255, 0, 0));
             }
@@ -166,7 +219,7 @@ impl ScientificState {
         self.calibration.add_point((0, 0), (0.0, 0.0));
         self.calibration.add_point((pixels_per_unit as i32, 0), (1.0, 0.0));
     
-        // Store calibration information for future measurements
+        // Store calibration information
         self.calibration.pixels_per_unit = pixels_per_unit as f32;
         self.calibration.unit = unit.clone();
     
@@ -176,27 +229,43 @@ impl ScientificState {
                 channel.metadata.scale_calibration = Some((pixels_per_unit as f32, unit.clone()));
             }
         }
-        // Create a valid image for the annotation
+    
+        // Remove existing scale bar annotations first
+        self.annotations.retain(|anno| !matches!(anno.annotation_type, AnnotationType::Scale { .. }));
+    
+        // Only create new scale annotation if we have an image
         if let Some(channel) = self.channels.first() {
-            let mut data = vec![0u8; (channel.image.data_w() * channel.image.data_h() * 3) as usize];
-            let scale_image = RgbImage::new(
-                &data,
-                channel.image.data_w(),
-                channel.image.data_h(),
-                fltk::enums::ColorDepth::Rgb8
-            ).unwrap();
+            let width = channel.image.data_w();
+            let height = channel.image.data_h();
+            
+            let (x_offset, y_offset) = match self.legend_position {
+                LegendPosition::TopLeft => (20, 20),
+                LegendPosition::TopRight => (width - 120, 20),
+                LegendPosition::BottomLeft => (20, height - 50),
+                LegendPosition::BottomRight => (width - 120, height - 50),
+            };
+    
+            let scale_coordinates = vec![
+                (x_offset, y_offset),
+                (x_offset + (100.0 * pixels_per_unit) as i32, y_offset)
+            ];
     
             let annotation = Annotation {
-                name: format!("Scale Bar ({} {})", real_distance, unit),
-                image: scale_image,
+                name: format!("Scale Bar ({} {})", 100, unit),
+                image: RgbImage::new(
+                    &vec![0u8; (width * height * 3) as usize],
+                    width,
+                    height,
+                    fltk::enums::ColorDepth::Rgb8
+                ).unwrap(),
                 annotation_type: AnnotationType::Scale {
                     pixels_per_unit: pixels_per_unit as f32,
-                    unit: unit,
+                    unit,
                 },
-                visible: true,
-                coordinates: self.current_roi_points.clone(),
+                visible: self.show_legend,  // Use current visibility state
+                coordinates: scale_coordinates,
             };
-            println!("Scale bar annotation added with {} points", self.current_roi_points.len());
+            
             self.annotations.push(annotation);
         }
     }
@@ -305,56 +374,46 @@ impl ScientificState {
 
     fn draw_scale_bar(&self, composite: &mut Vec<u8>, width: i32, height: i32, points: &[(i32, i32)], pixels_per_unit: f32) {
         if points.len() < 2 {
-            println!("Not enough points for scale bar");
             return;
         }
-    
+
         let (x1, y1) = points[0];
         let (x2, y2) = points[1];
         
-        println!("Drawing scale line from ({}, {}) to ({}, {})", x1, y1, x2, y2);
-        
-        // Draw main line
-        self.draw_line(composite, width, height, (x1, y1), (x2, y2), (255, 255, 255), 2);
-        
-        // Draw tick marks at ends
-        let tick_length: f32 = 5.0;
-        let dx = x2 - x1;
-        let dy = y2 - y1;
-        let distance = ((dx * dx + dy * dy) as f32).sqrt();
-        
-        // Calculate perpendicular vector for ticks
-        let norm_x = -dy as f32 / distance;
-        let norm_y = dx as f32 / distance;
-        
-        // Draw ticks at both ends
-        let tick1_end = (
-            (x1 as f32 + norm_x * tick_length) as i32,
-            (y1 as f32 + norm_y * tick_length) as i32
-        );
-        let tick2_end = (
-            (x2 as f32 + norm_x * tick_length) as i32,
-            (y2 as f32 + norm_y * tick_length) as i32
+        // Draw main scale bar line
+        self.draw_line(
+            composite,
+            width,
+            height,
+            (x1, y1),
+            (x2, y2),
+            (255, 255, 255),
+            2
         );
         
-        self.draw_line(composite, width, height, (x1, y1), tick1_end, (255, 255, 255), 2);
-        self.draw_line(composite, width, height, (x2, y2), tick2_end, (255, 255, 255), 2);
+        // Draw tick marks
+        let tick_height = 5;
+        let tick_points = [
+            ((x1, y1 - tick_height), (x1, y1 + tick_height)),
+            ((x2, y2 - tick_height), (x2, y2 + tick_height))
+        ];
         
-        // Calculate and draw the measurement text
-        let real_distance = distance / pixels_per_unit;
-        let text = format!("{:.1} µm", real_distance);
+        for (start, end) in tick_points.iter() {
+            self.draw_line(composite, width, height, *start, *end, (255, 255, 255), 1);
+        }
         
-        // Position text above the line
+        // Draw scale text
         self.draw_text_on_pixels(
             composite,
             width,
             height,
-            (x1 + x2) / 2 - 20,
-            (y1 + y2) / 2 - 15,
-            &text,
+            x1,
+            y1 - 15,
+            &format!("100 {}", self.calibration.unit),
             (255, 255, 255)
         );
     }
+
     
     
     // Helper function to draw text directly on pixels

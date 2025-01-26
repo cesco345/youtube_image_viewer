@@ -1,3 +1,4 @@
+//src/menu/edit/layers/mod.rs
 mod dialog;
 pub mod handlers;
 mod color_filter;

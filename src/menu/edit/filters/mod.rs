@@ -1,4 +1,4 @@
-// External crate imports
+// menu/edit/filters/mod.rs
 use image::{ImageBuffer, Rgba};
 use fltk::image::RgbImage;
 use fltk::prelude::*;

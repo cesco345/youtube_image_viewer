@@ -6,22 +6,58 @@ use fltk::{
     group::{Pack, PackType},
     frame::Frame,
     enums::{Color, Align},
+    menu::Choice,
+    button::CheckButton,
 };
+use crate::scientific::types::LegendPosition;
 use std::rc::Rc;
 use std::cell::RefCell;
 use crate::state::ImageState;
 
-pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageState>>) -> Option<(f64, String, String)> {
+pub fn show_scale_input_dialog(
+    pixel_distance: f64, 
+    state: &Rc<RefCell<ImageState>>,
+    frame: &Rc<RefCell<Frame>>,
+) -> Option<(f64, String, String)> {
     let result = Rc::new(RefCell::new(None));
     let mut win = Window::default()
-        .with_size(300, 400)  // Made taller for buttons
+        .with_size(300, 500)
         .with_label("Set Scale");
     win.set_color(Color::Background);
     
     let mut pack = Pack::default()
-        .with_size(280, 350)
+        .with_size(280, 450)
         .with_pos(10, 10);
-    pack.set_spacing(10);  // Reduced spacing to fit all elements
+    pack.set_spacing(10);
+    
+    // Add legend options under the current inputs
+    let legend_pack = Pack::default().with_size(280, 80);
+    Frame::default()
+        .with_size(280, 20)
+        .with_label("Legend Position:");
+    let mut legend_choice = Choice::default().with_size(280, 25);
+    legend_choice.add_choice("Top Left|Top Right|Bottom Left|Bottom Right");
+    
+    // Set initial position based on current state
+    if let Ok(state_ref) = state.try_borrow() {
+        legend_choice.set_value(match state_ref.scientific_state.legend_position {
+            LegendPosition::TopLeft => 0,
+            LegendPosition::TopRight => 1,
+            LegendPosition::BottomLeft => 2,
+            LegendPosition::BottomRight => 3,
+        });
+    }
+
+    let mut show_legend = CheckButton::default()
+        .with_size(280, 25)
+        .with_label("Show Scale Legend");
+    
+    // Set initial checkbox state based on current visibility
+    if let Ok(state_ref) = state.try_borrow() {
+        show_legend.set_checked(state_ref.scientific_state.show_legend);
+    }
+    
+    legend_pack.end();
     
     // Pixel distance display
     let pixel_frame = Pack::default().with_size(280, 40);
@@ -87,7 +123,7 @@ pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageStat
     
     // Button pack for all buttons
     let mut button_pack = Pack::default()
-        .with_size(280, 80)  // Increased height for two rows of buttons
+        .with_size(280, 80)
         .with_type(PackType::Vertical);
     button_pack.set_spacing(10);
 
@@ -136,6 +172,36 @@ pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageStat
         }
     });
     
+    // Update visibility immediately when checkbox changes
+    show_legend.set_callback({
+        let state = state.clone();
+        let frame = frame.clone();
+        move |btn| {
+            if let Ok(mut state_ref) = state.try_borrow_mut() {
+                state_ref.scientific_state.show_legend = btn.is_checked();
+                frame.borrow_mut().redraw();
+            }
+        }
+    });
+
+    // Update position immediately when choice changes
+    legend_choice.set_callback({
+        let state = state.clone();
+        let frame = frame.clone();
+        move |choice| {
+            if let Ok(mut state_ref) = state.try_borrow_mut() {
+                let position = match choice.value() {
+                    0 => LegendPosition::TopLeft,
+                    1 => LegendPosition::TopRight,
+                    2 => LegendPosition::BottomLeft,
+                    _ => LegendPosition::BottomRight,
+                };
+                state_ref.scientific_state.set_legend_position(position);
+                frame.borrow_mut().redraw();
+            }
+        }
+    });
+    
     // Set Scale button callback
     set_scale_btn.set_callback({
         let mut win = win.clone();
@@ -143,13 +209,27 @@ pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageStat
         let unit_input = unit_input.clone();
         let objective_input = objective_input.clone();
         let result = result.clone();
+        let show_legend = show_legend.clone();
+        let legend_choice = legend_choice.clone();
+        let state = state.clone();
+        let frame = frame.clone();
         move |_| {
             if let Ok(real_distance) = distance_input.value().parse::<f64>() {
+                if let Ok(mut state_ref) = state.try_borrow_mut() {
+                    state_ref.scientific_state.show_legend = show_legend.is_checked();
+                    state_ref.scientific_state.legend_position = match legend_choice.value() {
+                        0 => LegendPosition::TopLeft,
+                        1 => LegendPosition::TopRight,
+                        2 => LegendPosition::BottomLeft,
+                        _ => LegendPosition::BottomRight,
+                    };
+                }
                 *result.borrow_mut() = Some((
                     real_distance, 
                     unit_input.value(),
                     objective_input.value()
                 ));
+                frame.borrow_mut().redraw();
                 win.hide();
             }
         }
@@ -161,9 +241,19 @@ pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageStat
         let unit_input = unit_input.clone();
         let mut objective_input = objective_input.clone();
         let state = state.clone();
+        let show_legend = show_legend.clone();
+        let legend_choice = legend_choice.clone();
+        let frame = frame.clone();
         move |_| {
             if let Ok(real_distance) = distance_input.value().parse::<f64>() {
                 if let Ok(mut state_ref) = state.try_borrow_mut() {
+                    state_ref.scientific_state.show_legend = show_legend.is_checked();
+                    state_ref.scientific_state.legend_position = match legend_choice.value() {
+                        0 => LegendPosition::TopLeft,
+                        1 => LegendPosition::TopRight,
+                        2 => LegendPosition::BottomLeft,
+                        _ => LegendPosition::BottomRight,
+                    };
                     state_ref.scientific_state.set_scale(
                         pixel_distance,
                         real_distance,
@@ -172,6 +262,7 @@ pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageStat
                     );
                 }
                 objective_input.set_value("");  // Clear for next objective
+                frame.borrow_mut().redraw();
             }
         }
     });
@@ -185,15 +276,8 @@ pub fn show_scale_input_dialog(pixel_distance: f64, state: &Rc<RefCell<ImageStat
     while win.shown() {
         fltk::app::wait();
     }
-    
-    let return_value = match &*result.borrow() {
-        Some((dist, unit, obj)) => Some((
-            *dist,
-            unit.clone(),
-            obj.clone()
-        )),
-        None => None
-    };
-
-    return_value
+    // Fixed: Store the result in a temporary value before the Rc gets dropped
+    let final_result = result.borrow().clone();
+    final_result
 }
+    

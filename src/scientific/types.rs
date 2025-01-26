@@ -1,5 +1,13 @@
 // src/scientific/types.rs
 
+#[derive(Clone, Debug, Copy)]
+pub enum LegendPosition {
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight,
+}
+
 #[derive(Clone, Debug)]
 pub enum ROIShape {
     Rectangle { width: i32, height: i32 },

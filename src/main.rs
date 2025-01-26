@@ -1,3 +1,4 @@
+//src/main.rs
 mod menu;
 mod state;
 mod utils;
@@ -196,6 +197,8 @@ let state_roi = state.clone();
 let state_profile = state.clone();
 let state_scale = state.clone();
 let state_metadata = state.clone();
+let frame_legend = frame.clone();
+let state_legend = state.clone();
 
 menu.add("&Scientific/&Channel Manager", Shortcut::None, MenuFlag::Normal, move |_| {
     scientific::ui::show_channel_manager(&frame_channels, &state_channels);
@@ -204,6 +207,9 @@ menu.add("&Scientific/&Channel Manager", Shortcut::None, MenuFlag::Normal, move 
 // Direct tool invocations
 menu.add("&Scientific/&Measurements/Scale Bar", Shortcut::None, MenuFlag::Normal, move |_| {
     scientific::tools::interactive::start_interactive_scale(&frame_scale, &state_scale);
+});
+menu.add("&Scientific/&Measurements/Toggle Scale Legend", Shortcut::None, MenuFlag::Normal, move |_| {
+    scientific::tools::handlers::handle_toggle_scale_legend(&frame_legend, &state_legend);
 });
 
 menu.add("&Scientific/&Measurements/ROI", Shortcut::None, MenuFlag::Normal, move |_| {

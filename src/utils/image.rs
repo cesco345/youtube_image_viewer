@@ -1,13 +1,12 @@
-// utils/image.rs
-
 use fltk::{frame::Frame, image::RgbImage, prelude::*};
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::{rc::Rc, cell::RefCell};
+use crate::state::ImageState;
+use crate::scientific::rendering::frame_renderer::FrameRenderer;
 
 pub const MENU_HEIGHT: i32 = 25;
 
-pub fn display_image_with_zoom(frame: &Rc<RefCell<Frame>>, image: &mut RgbImage, zoom: f64) {
-    let mut frame_ref = frame.borrow_mut();
+pub fn display_image_with_zoom(frame: &Rc<RefCell<Frame>>, image: &mut RgbImage, zoom: f32, state: &Rc<RefCell<ImageState>>) {
+    let frame_ref = frame.borrow();
     let frame_w = frame_ref.w();
     let frame_h = frame_ref.h();
                 
@@ -16,16 +15,18 @@ pub fn display_image_with_zoom(frame: &Rc<RefCell<Frame>>, image: &mut RgbImage,
         image.data_h(),
         frame_w,
         frame_h - MENU_HEIGHT,
-        zoom
+        zoom as f64
     );
 
     image.scale(new_w, new_h, true, true);
-    frame_ref.set_image(Some(image.clone()));
-    frame_ref.redraw();
+    drop(frame_ref);
+    
+    // Only set up the frame draw, don't set_image directly
+    FrameRenderer::setup_frame_draw(frame, state);
+    frame.borrow_mut().redraw();
 }
 
-// Modified to accept zoom parameter
-pub fn display_image(frame: &Rc<RefCell<Frame>>, img: &RgbImage, zoom: f64) {
+pub fn display_image(frame: &Rc<RefCell<Frame>>, img: &RgbImage, zoom: f32) {
     let mut frame = frame.borrow_mut();
     let frame_w = frame.w();
     let frame_h = frame.h();
@@ -35,7 +36,7 @@ pub fn display_image(frame: &Rc<RefCell<Frame>>, img: &RgbImage, zoom: f64) {
         img.data_h(),
         frame_w,
         frame_h - MENU_HEIGHT,
-        zoom
+        zoom as f64
     );
     
     let mut scaled_img = img.clone();
