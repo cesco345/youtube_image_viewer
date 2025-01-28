@@ -21,6 +21,11 @@ use fltk::{
  }
  
  pub fn start_interactive_scale(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
+    // Show instruction message
+    fltk::dialog::message_default(
+        "Click and drag to draw a line along a known distance in your image.\n\
+        Release the mouse button when done."
+    );
     let interactive = Rc::new(RefCell::new(InteractiveScale::new()));
     let interactive_draw = interactive.clone();
     let state_draw = state.clone();

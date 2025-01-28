@@ -205,8 +205,8 @@ menu.add("&Scientific/&Channel Manager", Shortcut::None, MenuFlag::Normal, move 
 });
 
 // Direct tool invocations
-menu.add("&Scientific/&Measurements/Scale Bar", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::tools::interactive::start_interactive_scale(&frame_scale, &state_scale);
+menu.add("&Scientific/&Measurements/Calibrations", Shortcut::None, MenuFlag::Normal, move |_| {
+    scientific::tools::handlers::handle_start_calibration(&frame_scale, &state_scale);
 });
 menu.add("&Scientific/&Measurements/Toggle Scale Legend", Shortcut::None, MenuFlag::Normal, move |_| {
     scientific::tools::handlers::handle_toggle_scale_legend(&frame_legend, &state_legend);

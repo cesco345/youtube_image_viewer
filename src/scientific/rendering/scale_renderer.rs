@@ -1,3 +1,4 @@
+//src/scientific/rendering/scale_renderer.rs
 use fltk::{enums::{Color, Font, Align}, draw};
 use crate::scientific::types::LegendPosition;
 use crate::scientific::rendering::frame_renderer::FrameRenderer;

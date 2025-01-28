@@ -1,4 +1,4 @@
-//src
+//src/scientific/rendering/frame_renderer.rs
 use fltk::{
     frame::Frame,
     prelude::*,
@@ -17,12 +17,12 @@ impl FrameRenderer {
         let state = state.clone();
         
         frame.borrow_mut().draw(move |f| {
-            // Draw base image if available
+            // draw the base image if available
             if let Some(base_img) = state.borrow().image.as_ref() {
                 let mut img = base_img.clone();
                 let zoom = state.borrow().zoom;
                 
-                // Scale image according to frame size and zoom
+                // scale image according to frame size and zoom
                 let (new_w, new_h) = scale_image_dimensions(
                     img.data_w(),
                     img.data_h(),
@@ -39,27 +39,43 @@ impl FrameRenderer {
     pub fn setup_scientific_frame(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
         let state_clone = state.clone();
         
-        Self::setup_frame_draw(frame, state);
-        
-        // Add scientific overlay callback
-        let mut frame = frame.borrow_mut();
-        frame.draw(move |f| {
+        // Set a single draw callback that handles both image and scale
+        frame.borrow_mut().draw(move |f| {
             let state_ref = state_clone.borrow();
-            if state_ref.scientific_state.show_legend {
-                ScaleRenderer::draw_legend(
-                    f.x(),
-                    f.y(),
+            
+            // Draw base image first
+            if let Some(base_img) = state_ref.image.as_ref() {
+                let mut img = base_img.clone();
+                let zoom = state_ref.zoom;
+                
+                // Scale image according to frame size and zoom
+                let (new_w, new_h) = scale_image_dimensions(
+                    img.data_w(),
+                    img.data_h(),
                     f.width(),
-                    f.height(),
-                    state_ref.scientific_state.legend_position,
-                    &state_ref.scientific_state.calibration.unit,
-                    state_ref.scientific_state.calibration.pixels_per_unit,
+                    f.height() - MENU_HEIGHT,
+                    zoom as f64
                 );
+                img.scale(new_w, new_h, true, true);
+                img.draw(f.x(), f.y(), f.width(), f.height());
+                
+                // Draw the scale if enabled
+                if state_ref.scientific_state.show_legend {
+                    ScaleRenderer::draw_legend(
+                        f.x(),
+                        f.y(),
+                        f.width(),
+                        f.height(),
+                        state_ref.scientific_state.legend_position,
+                        &state_ref.scientific_state.calibration.unit,
+                        state_ref.scientific_state.calibration.pixels_per_unit,
+                    );
+                }
             }
         });
     }
 
-    /// Draw text with background for better visibility
+    /// draw text with background for better visibility
     pub fn draw_text_with_background(
         text: &str,
         x: i32,
@@ -72,7 +88,7 @@ impl FrameRenderer {
         let text_width = text.len() * 8; // Approximate width
         let text_height = font_size + 4;
 
-        // Draw background
+        // draw background
         draw::set_draw_color(bg_color);
         draw::draw_rectf(
             x - 2,
@@ -81,7 +97,7 @@ impl FrameRenderer {
             text_height,
         );
 
-        // Draw text
+        // draw text
         draw::set_font(font, font_size);
         draw::set_draw_color(text_color);
         draw::draw_text2(
@@ -94,7 +110,7 @@ impl FrameRenderer {
         );
     }
 
-    /// Draw a line with endpoints
+    /// draw a line with endpoints
     pub fn draw_line_with_endpoints(
         start: (i32, i32),
         end: (i32, i32),
@@ -112,7 +128,7 @@ impl FrameRenderer {
         }
     }
 
-    /// Draw a measurement with value
+    /// draw a measurement with value
     pub fn draw_measurement(
         start: (i32, i32),
         end: (i32, i32),
@@ -120,15 +136,15 @@ impl FrameRenderer {
         unit: &str,
         color: Color
     ) {
-        // Draw the line
+        // draw the line
         Self::draw_line_with_endpoints(start, end, color, 2, 3.0);
 
-        // Calculate text position (above middle of line)
+        // calculate text position (above middle of line)
         let text_x = (start.0 + end.0) / 2 - 20;
         let text_y = (start.1 + end.1) / 2 - 15;
         let text = format!("{:.1} {}", value, unit);
 
-        // Draw measurement text
+        // draw measurement text
         Self::draw_text_with_background(
             &text,
             text_x,
@@ -140,7 +156,7 @@ impl FrameRenderer {
         );
     }
 
-    /// Draw guide text for user interaction
+    /// draw guide text for user interaction
     pub fn draw_guide_text(text: &str, x: i32, y: i32) {
         Self::draw_text_with_background(
             text,
@@ -153,7 +169,7 @@ impl FrameRenderer {
         );
     }
 
-    /// Calculate position on frame relative to anchor point
+    /// calculate position on frame relative to anchor point
     pub fn calculate_position(
         frame_x: i32,
         frame_y: i32,

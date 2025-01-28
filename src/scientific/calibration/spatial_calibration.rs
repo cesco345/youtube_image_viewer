@@ -1,3 +1,4 @@
+//src/scientific/calibration/spatial_calibration.rs
 use fltk::image::RgbImage;
 
 #[derive(Clone, Debug)]

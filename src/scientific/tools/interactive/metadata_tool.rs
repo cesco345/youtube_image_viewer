@@ -1,5 +1,5 @@
 use fltk::{
-    enums::Event,
+    enums::{Event, Color, Align},
     frame::Frame,
     window::Window,
     group::Pack,
@@ -20,23 +20,57 @@ pub struct MetadataEditor {
     binning_input: Input,
     pixel_size_input: FloatInput,
     comments_input: Input,
+    scale_info_frame: Frame,
 }
 
 impl MetadataEditor {
     pub fn new() -> Self {
         let mut window = Window::default()
-            .with_size(400, 300)
+            .with_size(400, 350)
             .with_label("Metadata Editor");
 
-        let mut pack = Pack::new(10, 10, 380, 280, "");
+        let mut pack = Pack::new(10, 10, 380, 330, "");
         pack.set_spacing(10);
 
-        let exposure_input = FloatInput::new(120, 10, 100, 25, "Exposure (ms):");
-        let gain_input = FloatInput::new(120, 45, 100, 25, "Gain:");
-        let objective_input = Input::new(120, 80, 200, 25, "Objective:");
-        let binning_input = Input::new(120, 115, 100, 25, "Binning:");
-        let pixel_size_input = FloatInput::new(120, 150, 100, 25, "Pixel Size (μm):");
-        let comments_input = Input::new(120, 185, 250, 25, "Comments:");
+        let mut exposure_label = Frame::new(10, 10, 110, 25, "Exposure (ms):");
+        exposure_label.set_label_color(Color::White);
+        let mut exposure_input = FloatInput::new(120, 10, 100, 25, "");
+        exposure_input.set_color(Color::Dark3);
+        exposure_input.set_text_color(Color::White);
+
+        let mut gain_label = Frame::new(10, 45, 110, 25, "Gain:");
+        gain_label.set_label_color(Color::White);
+        let mut gain_input = FloatInput::new(120, 45, 100, 25, "");
+        gain_input.set_color(Color::Dark3);
+        gain_input.set_text_color(Color::White);
+
+        let mut objective_label = Frame::new(10, 80, 110, 25, "Objective:");
+        objective_label.set_label_color(Color::White);
+        let mut objective_input = Input::new(120, 80, 200, 25, "");
+        objective_input.set_color(Color::Dark3);
+        objective_input.set_text_color(Color::White);
+
+        let mut binning_label = Frame::new(10, 115, 110, 25, "Binning:");
+        binning_label.set_label_color(Color::White);
+        let mut binning_input = Input::new(120, 115, 100, 25, "");
+        binning_input.set_color(Color::Dark3);
+        binning_input.set_text_color(Color::White);
+
+        let mut pixel_size_label = Frame::new(10, 150, 110, 25, "Pixel Size (μm):");
+        pixel_size_label.set_label_color(Color::White);
+        let mut pixel_size_input = FloatInput::new(120, 150, 100, 25, "");
+        pixel_size_input.set_color(Color::Dark3);
+        pixel_size_input.set_text_color(Color::White);
+
+        let mut comments_label = Frame::new(10, 185, 110, 25, "Comments:");
+        comments_label.set_label_color(Color::White);
+        let mut comments_input = Input::new(120, 185, 250, 25, "");
+        comments_input.set_color(Color::Dark3);
+        comments_input.set_text_color(Color::White);
+
+        let mut scale_info_frame = Frame::new(10, 220, 380, 60, "");
+        scale_info_frame.set_label_color(Color::White);
+        scale_info_frame.set_align(Align::Left | Align::Inside);
 
         pack.end();
         window.end();
@@ -49,10 +83,11 @@ impl MetadataEditor {
             binning_input,
             pixel_size_input,
             comments_input,
+            scale_info_frame,
         }
     }
 
-    pub fn show(&mut self, metadata: &Metadata) {
+    pub fn show(&mut self, metadata: &Metadata, state: &ImageState) {
         if let Some(exposure) = metadata.exposure_time {
             self.exposure_input.set_value(&exposure.to_string());
         }
@@ -71,6 +106,17 @@ impl MetadataEditor {
         if let Some(ref comments) = metadata.comments {
             self.comments_input.set_value(comments);
         }
+
+        // Update scale information
+        let scale_info = format!(
+            "Scale: {:.2} pixels/{}\nCalibration: {}",
+            state.scientific_state.calibration.pixels_per_unit,
+            state.scientific_state.calibration.unit,
+            metadata.scale_calibration.as_ref()
+                .map(|(ppu, unit)| format!("{:.2} pixels/{}", ppu, unit))
+                .unwrap_or_else(|| "Not calibrated".to_string())
+        );
+        self.scale_info_frame.set_label(&scale_info);
 
         self.window.show();
     }
@@ -94,16 +140,18 @@ pub fn start_metadata_editor(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
     let state_ref = state.borrow();
     let current_metadata = Metadata::default();
     
-    editor.show(&current_metadata);
+    editor.show(&current_metadata, &state_ref);
 
-    let mut apply_btn = Button::new(10, 250, 70, 25, "Apply");
+    let mut apply_btn = Button::new(10, 290, 70, 25, "Apply");
+    apply_btn.set_color(Color::Dark3);
+    apply_btn.set_label_color(Color::White);
+    
     let state_clone = state.clone();
     let frame_clone = frame.clone();
     
     apply_btn.set_callback(move |_| {
         if let Ok(mut state_ref) = state_clone.try_borrow_mut() {
             let new_metadata = editor.get_metadata();
-            // Here you would apply the metadata to the current channel or image
             frame_clone.borrow_mut().redraw();
         }
     });

@@ -1,5 +1,7 @@
+//src/scientific/state/scientific_state.rs
 use fltk::{image::RgbImage, prelude::*};
 use std::collections::HashMap;
+use chrono::Utc;
 use crate::scientific::{
     layers::{Channel, Annotation, AnnotationType,Metadata, Calibration},
     analysis::{IntensityProfile},
@@ -7,7 +9,7 @@ use crate::scientific::{
     types::{ROIShape, ROITool, MeasurementTool, LegendPosition},
 };
 
-
+/// state for the scientific image viewer
 pub struct ScientificState {
     pub channels: Vec<Channel>,
     pub annotations: Vec<Annotation>,
@@ -24,7 +26,7 @@ pub struct ScientificState {
     pub legend_position: LegendPosition,
 
 }
-
+// implementation block for ScientificState
 impl ScientificState {
     pub fn new() -> Self {
         println!("Initializing ScientificState with show_legend=true");  // Debug print
@@ -40,14 +42,14 @@ impl ScientificState {
             current_measurement_points: Vec::new(),
             show_overlay: true,
             calibrations: Vec::new(),
-            show_legend: false,  // Add default value
+            show_legend: false,  // adding a default value that will be removed later
             legend_position: LegendPosition::BottomRight,
         }
     }
     pub fn toggle_legend(&mut self) {
         self.show_legend = !self.show_legend;
         
-        // Update visibility of scale annotations while preserving other annotations
+        // update visibility of all scale annotations
         for annotation in &mut self.annotations {
             if let AnnotationType::Scale { .. } = annotation.annotation_type {
                 annotation.visible = self.show_legend;
@@ -56,7 +58,7 @@ impl ScientificState {
     }
     pub fn set_legend_position(&mut self, position: LegendPosition) {
         self.legend_position = position;
-        // Update existing scale bar positions
+        // update coordinates for all scale annotations
         if let Some(channel) = self.channels.first() {
             let width = channel.image.data_w();
             let height = channel.image.data_h();
@@ -68,7 +70,7 @@ impl ScientificState {
                 LegendPosition::BottomRight => (width - 120, height - 50),
             };
 
-            // Update coordinates for existing scale annotations
+            // update coordinates for all scale annotations
             for annotation in &mut self.annotations {
                 if let AnnotationType::Scale { .. } = annotation.annotation_type {
                     if annotation.coordinates.len() >= 2 {
@@ -578,17 +580,26 @@ impl ScientificState {
             .filter(|a| a.visible)
             .collect()
     }
-    pub fn add_objective_calibration(&mut self, objective: String, real_distance: f64, unit: String, pixel_distance: f64) {
+    pub fn add_objective_calibration(
+        &mut self, 
+        objective: String, 
+        real_distance: f64, 
+        unit: String, 
+        pixel_distance: f64,
+        image_name: Option<String> 
+    ) {
         let pixels_per_unit = pixel_distance / real_distance;
         
-        // Store calibration in metadata or a new calibration map
-        // This could be added to your Metadata struct or as a new field in ScientificState
         let calibration = Calibration {
-            objective,
+            objective: objective.clone(),
             pixels_per_unit: pixels_per_unit as f32,
-            unit,
+            unit: unit.clone(),
             pixel_distance,
             real_distance,
+            timestamp: Utc::now(),
+            image_name, 
+            //image_name: self.path.as_ref().map(|p| p.file_name().unwrap().to_string_lossy().into_owned()),
+            notes: None,
         };
         
         self.calibrations.push(calibration);

@@ -1,3 +1,4 @@
+//src/scientific/ui/measurement_dialog.rs
 use fltk::{
     window::Window,
     button::Button,

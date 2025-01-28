@@ -1,6 +1,6 @@
 mod channel;
 mod annotation;
-mod metadata;
+pub mod metadata;
 
 pub use channel::Channel;
 pub use annotation::{Annotation, AnnotationType};

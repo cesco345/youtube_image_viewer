@@ -1,6 +1,6 @@
 // src/scientific/layers/channel.rs
 use fltk::image::RgbImage;
-use super::metadata::Metadata;
+use crate::scientific::layers::metadata::Metadata;
 
 #[derive(Clone)]
 pub struct Channel {
