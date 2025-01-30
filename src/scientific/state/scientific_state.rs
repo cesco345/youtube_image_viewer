@@ -273,35 +273,19 @@ impl ScientificState {
             return None;
         };
     
-        // Start with the first channel's image data instead of a blank image
-        let mut composite = if let Some(first_channel) = self.channels.first() {
-            if first_channel.visible {
-                first_channel.image.to_rgb_data()
-            } else {
-                vec![0u8; (width * height * 3) as usize]
-            }
+        // Start with a copy of the base image
+        let mut composite = if let Some(base_img) = &self.base_image {
+            base_img.to_rgb_data()
         } else {
-            vec![0u8; (width * height * 3) as usize]
+            return None;
         };
     
-        // Blend remaining visible channels starting from the second one
-        for channel in self.channels.iter().skip(1).filter(|c| c.visible) {
-            self.blend_channel(&mut composite, channel);
-        }
-    
+        // Only draw annotations if show_overlay is true
         if self.show_overlay {
-            let mut overlay = composite.clone();
-            
             // Draw all persistent annotations
             for annotation in self.annotations.iter().filter(|a| a.visible) {
-                self.overlay_annotation(&mut overlay, annotation);
+                self.overlay_annotation(&mut composite, annotation);
             }
-    
-            if !self.current_roi_points.is_empty() && self.roi_tool.is_some() {
-                self.draw_in_progress(&mut overlay, width, height, &self.current_roi_points, (255, 0, 0));
-            }
-    
-            composite = overlay;
         }
     
         Some(RgbImage::new(&composite, width, height, fltk::enums::ColorDepth::Rgb8).unwrap())

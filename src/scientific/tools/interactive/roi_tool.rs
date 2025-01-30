@@ -127,15 +127,15 @@ pub fn start_interactive_roi(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
         let state = state.clone();
         
         frame.borrow_mut().draw(move |f| {
-            // Draw base image first
+            // Only draw the composite image which should include everything
             if let Ok(state_ref) = state.try_borrow() {
-                if let Some(base_img) = state_ref.scientific_state.get_base_image() {
-                    let mut img_copy = base_img.copy();
-                    img_copy.draw(f.x(), f.y(), f.width(), f.height());
+                if let Some(composite_img) = state_ref.scientific_state.get_composite_image() {
+                    let mut composite_copy = composite_img.copy();
+                    composite_copy.draw(f.x(), f.y(), f.width(), f.height());
                 }
             }
             
-            // Draw current ROI
+            // Draw current ROI on top
             if let Ok(interactive_ref) = interactive_state.try_borrow() {
                 if !interactive_ref.points.is_empty() {
                     let draw_color = if state.try_borrow().map(|s| s.scientific_state.is_analyzing_cells()).unwrap_or(false) {
@@ -156,14 +156,6 @@ pub fn start_interactive_roi(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                     for &point in &display_points {
                         draw_vertex_marker(point.0, point.1);
                     }
-                }
-            }
-            
-            // Draw existing annotations
-            if let Ok(state_ref) = state.try_borrow() {
-                if let Some(composite_img) = state_ref.scientific_state.get_composite_image() {
-                    let mut composite_copy = composite_img.copy();
-                    composite_copy.draw(f.x(), f.y(), f.width(), f.height());
                 }
             }
         });
