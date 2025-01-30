@@ -1,13 +1,15 @@
-mod channel_dialog;
-mod measurement_dialog;
-mod profile_dialog;
-mod roi_dialog;
-mod scale_dialog;
-mod calibration_dialog;
+pub mod channel_dialog;
+pub mod measurement_dialog;
+pub mod profile_dialog;
+pub mod roi_dialog;
+pub mod scale_dialog;
+pub mod calibration_dialog;
+pub mod cell_analysis;
 
-pub use channel_dialog::show_channel_manager;
-pub use measurement_dialog::show_measurement_dialog;
-pub use profile_dialog::show_profile_dialog;
-pub use roi_dialog::show_roi_dialog;
-pub use scale_dialog::show_scale_input_dialog;
-pub use calibration_dialog::show_calibration_welcome_dialog;
+pub use channel_dialog::*;
+pub use measurement_dialog::*;
+pub use profile_dialog::*;
+pub use roi_dialog::*;
+pub use scale_dialog::*;
+pub use calibration_dialog::*;
+pub use cell_analysis::*;

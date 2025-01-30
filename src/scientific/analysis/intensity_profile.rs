@@ -8,6 +8,12 @@ pub struct IntensityProfile {
 }
 
 impl IntensityProfile {
+    pub fn get_values(&self) -> Vec<f64> {
+        self.intensities.iter()
+            .flat_map(|channel| channel.iter())
+            .map(|&x| x as f64)
+            .collect()
+    }
     pub fn new(line_points: &[(i32, i32)], channels: &[Channel]) -> Self {
         let mut profile = Self {
             x_values: Vec::new(),

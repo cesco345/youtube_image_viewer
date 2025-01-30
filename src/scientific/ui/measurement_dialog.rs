@@ -10,7 +10,7 @@ use fltk::{
 use std::{rc::Rc, cell::RefCell};
 use crate::state::ImageState;
 use crate::scientific::{self, Annotation, AnnotationType};
-use crate::scientific::state::scientific_state::ScientificState;
+use crate::scientific::state::ScientificState;
 
 fn add_scale_bar(state: &mut ScientificState, length: f32, unit: String) {
     if let Some(img) = state.get_composite_image() {

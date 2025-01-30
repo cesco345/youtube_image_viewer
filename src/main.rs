@@ -1,4 +1,3 @@
-//src/main.rs
 mod menu;
 mod state;
 mod utils;
@@ -10,14 +9,14 @@ use fltk::{
     menu::{MenuBar, MenuFlag},
     prelude::*,
     window::Window,
-    enums::Shortcut,
+    enums::{Shortcut, Event, CallbackTrigger},
 };
-use fltk_theme::{ColorTheme, color_themes, widget_themes, WidgetTheme, ThemeType};
+use fltk_theme::{ColorTheme, color_themes, WidgetTheme, ThemeType};
 use std::{cell::RefCell, rc::Rc};
 use state::ImageState;
 use utils::MENU_HEIGHT;
-use crate::scientific::{ROITool, tools::ROIShape};
-use crate::scientific::ui::show_profile_dialog;
+use crate::menu::scientific::analysis::cell::setup_cell_analysis_menu;
+use crate::scientific::tools::interactive::cell_analysis_tool::CellAnalysisState;
 
 fn main() {
     let app = app::App::default().with_scheme(app::Scheme::Gtk);
@@ -30,6 +29,10 @@ fn main() {
     let frame = Rc::new(RefCell::new(Frame::new(0, MENU_HEIGHT, 800, 600 - MENU_HEIGHT, "")));
     frame.borrow_mut().set_frame(fltk::enums::FrameType::FlatBox);
     let state = Rc::new(RefCell::new(ImageState::new()));
+
+    // Set up frame event handling
+    frame.borrow_mut().set_trigger(CallbackTrigger::Release);
+    
 
     // File Menu
     let frame_open = frame.clone();
@@ -186,43 +189,47 @@ fn main() {
         menu::edit::layers::handle_toggle_preview(&frame_layer_preview, &state_layer_preview);
     });
 
-// Scientific Menu
-let frame_channels = frame.clone();
-let frame_roi = frame.clone();
-let frame_profile = frame.clone();
-let frame_scale = frame.clone();
-let frame_metadata = frame.clone();
-let state_channels = state.clone();
-let state_roi = state.clone();
-let state_profile = state.clone();
-let state_scale = state.clone();
-let state_metadata = state.clone();
-let frame_legend = frame.clone();
-let state_legend = state.clone();
+    // Cell Analysis setup
+    setup_cell_analysis_menu(&mut menu, &frame, &state);
 
-menu.add("&Scientific/&Channel Manager", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::ui::show_channel_manager(&frame_channels, &state_channels);
-});
+    // Scientific Menu
+    let frame_channels = frame.clone();
+    let frame_roi = frame.clone();
+    let frame_profile = frame.clone();
+    let frame_scale = frame.clone();
+    let frame_metadata = frame.clone();
+    let state_channels = state.clone();
+    let state_roi = state.clone();
+    let state_profile = state.clone();
+    let state_scale = state.clone();
+    let state_metadata = state.clone();
+    let frame_legend = frame.clone();
+    let state_legend = state.clone();
 
-// Direct tool invocations
-menu.add("&Scientific/&Measurements/Calibrations", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::tools::handlers::handle_start_calibration(&frame_scale, &state_scale);
-});
-menu.add("&Scientific/&Measurements/Toggle Scale Legend", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::tools::handlers::handle_toggle_scale_legend(&frame_legend, &state_legend);
-});
+    menu.add("&Scientific/&Channel Manager", Shortcut::None, MenuFlag::Normal, move |_| {
+        scientific::ui::show_channel_manager(&frame_channels, &state_channels);
+    });
 
-menu.add("&Scientific/&Measurements/ROI", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::tools::interactive::start_interactive_roi(&frame_roi, &state_roi);
-});
+    // Scientific tool invocations
+    menu.add("&Scientific/&Measurements/Calibrations", Shortcut::None, MenuFlag::Normal, move |_| {
+        scientific::tools::handlers::handle_start_calibration(&frame_scale, &state_scale);
+    });
+    
+    menu.add("&Scientific/&Measurements/Toggle Scale Legend", Shortcut::None, MenuFlag::Normal, move |_| {
+        scientific::tools::handlers::handle_toggle_scale_legend(&frame_legend, &state_legend);
+    });
 
-menu.add("&Scientific/&Measurements/Line Profile", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::tools::interactive::start_interactive_profile(&frame_profile, &state_profile);
-});
+    menu.add("&Scientific/&Measurements/ROI", Shortcut::None, MenuFlag::Normal, move |_| {
+        scientific::tools::interactive::start_interactive_roi(&frame_roi, &state_roi);
+    });
 
-menu.add("&Scientific/&Metadata/Edit Properties", Shortcut::None, MenuFlag::Normal, move |_| {
-    scientific::tools::interactive::start_metadata_editor(&frame_metadata, &state_metadata);
-});
+    menu.add("&Scientific/&Measurements/Line Profile", Shortcut::None, MenuFlag::Normal, move |_| {
+        scientific::tools::interactive::start_interactive_profile(&frame_profile, &state_profile);
+    });
+
+    menu.add("&Scientific/&Metadata/Edit Properties", Shortcut::None, MenuFlag::Normal, move |_| {
+        scientific::tools::interactive::start_metadata_editor(&frame_metadata, &state_metadata);
+    });
 
     // Filters Preview Toggle
     let frame_preview = frame.clone();

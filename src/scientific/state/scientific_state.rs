@@ -1,13 +1,18 @@
 //src/scientific/state/scientific_state.rs
-use fltk::{image::RgbImage, prelude::*};
-use std::collections::HashMap;
+use fltk::{image::RgbImage, prelude::*, frame::Frame};
+use std::{collections::HashMap, rc::Rc, cell::RefCell};
 use chrono::Utc;
-use crate::scientific::{
+use crate::{
+scientific::{
     layers::{Channel, Annotation, AnnotationType,Metadata, Calibration},
-    analysis::{IntensityProfile},
+    analysis::{IntensityProfile, CellStatistics, CellMeasurement},
     calibration::SpatialCalibration,    
-    types::{ROIShape, ROITool, MeasurementTool, LegendPosition},
+    types::{ROIShape, ROITool, MeasurementTool, LegendPosition, CellMeasurementMode},
+    tools::interactive::cell_analysis_tool::{CellAnalysisTool, CellAnalysisState},
+},
+state::ImageState,
 };
+
 
 /// state for the scientific image viewer
 pub struct ScientificState {
@@ -24,6 +29,12 @@ pub struct ScientificState {
     pub calibrations: Vec<Calibration>,
     pub show_legend: bool,
     pub legend_position: LegendPosition,
+    pub cell_analysis_tool: Option<CellAnalysisTool>,
+    frame: Option<Rc<RefCell<Frame>>>,
+    state: Option<Rc<RefCell<ImageState>>>,
+    measurements: Vec<CellMeasurement>,
+    pub base_image: Option<RgbImage>,
+    pub measurement_mode: CellMeasurementMode,
 
 }
 // implementation block for ScientificState
@@ -44,8 +55,116 @@ impl ScientificState {
             calibrations: Vec::new(),
             show_legend: false,  // adding a default value that will be removed later
             legend_position: LegendPosition::BottomRight,
+            cell_analysis_tool: None,
+            frame: None,
+            state: None,
+            measurements: Vec::new(),
+            base_image: None,
+            measurement_mode: CellMeasurementMode::Single,
+
         }
     }
+    // Add this method to get measurements
+    pub fn get_measurements(&self) -> Option<Vec<CellMeasurement>> {
+        if self.measurements.is_empty() {
+            None
+        } else {
+            Some(self.measurements.clone())
+        }
+    }
+    pub fn get_measurement_mode(&self) -> CellMeasurementMode {
+        self.measurement_mode
+    }
+    pub fn store_base_image(&mut self, image: RgbImage) {
+        println!("Storing base image in scientific state");
+        // Store the base image
+        self.base_image = Some(image.clone());
+        
+        // Create and store a default channel for the image
+        println!("Creating default channel for base image");
+        let channel = Channel::new(
+            "Base".to_string(),
+            image,
+            550.0,  // Default wavelength for visible light
+            (255, 255, 255)  // White color for default channel
+        );
+        
+        // Clear existing channels and add the new one
+        self.channels.clear();
+        self.channels.push(channel);
+        println!("Channel created and stored. Total channels: {}", self.channels.len());
+    }
+    pub fn get_base_image(&self) -> Option<RgbImage> {
+        self.base_image.clone()
+    }
+
+    // Add this method to store measurements
+    pub fn add_cell_measurement(&mut self, measurement: CellMeasurement) {
+        self.measurements.push(measurement);
+    }
+    // these are the methods for cell analysis integration
+    pub fn set_frame(&mut self, frame: Rc<RefCell<Frame>>) {
+        self.frame = Some(frame);
+    }
+
+    pub fn set_state(&mut self, state: Rc<RefCell<ImageState>>) {
+        self.state = Some(state);
+    }
+
+    pub fn get_frame(&self) -> Option<Rc<RefCell<Frame>>> {
+        self.frame.clone()
+    }
+
+    pub fn get_state(&self) -> Option<Rc<RefCell<ImageState>>> {
+        self.state.clone()
+    }
+    // Add ROI update method
+    pub fn update_current_roi(&mut self, points: Vec<(i32, i32)>) {
+        if let Some(roi) = &mut self.roi_tool {
+            roi.shape = ROIShape::Polygon { points };
+        }
+    }
+
+    // Keep your existing clear_points method and add this for ROI clearing
+    pub fn clear_current_roi(&mut self) {
+        self.roi_tool = None;
+        self.clear_points();
+    }
+
+    // Add ROI intensity profile method
+    pub fn get_roi_intensity_profile(&mut self, points: &[(i32, i32)]) -> Option<IntensityProfile> {
+        println!("Attempting to get ROI intensity profile");
+        println!("Channels available: {}", self.channels.len());
+        
+        if self.channels.is_empty() {
+            println!("No channels available for intensity profile");
+            return None;
+        }
+    
+        // Get the composite image for the annotation
+        if let Some(img) = self.get_composite_image() {
+            println!("Creating ROI annotation with {} points", points.len());
+            
+            // Create and store the annotation with the actual image
+            let annotation = Annotation {
+                name: format!("ROI {}", self.annotations.len() + 1),
+                image: img.clone(),  // Use the actual composite image
+                annotation_type: AnnotationType::ROI {
+                    color: (0, 255, 0),
+                    line_width: 2,
+                },
+                visible: true,
+                coordinates: points.to_vec(),
+            };
+            
+            self.annotations.push(annotation);
+            println!("ROI annotation added");
+        }
+    
+        println!("Creating intensity profile with {} points", points.len());
+        Some(IntensityProfile::new(points, &self.channels))
+    }
+
     pub fn toggle_legend(&mut self) {
         self.show_legend = !self.show_legend;
         
@@ -288,34 +407,6 @@ impl ScientificState {
         
         self.roi_tool = Some(tool);
         self.measurement_tool = None;
-    }
-
-    pub fn get_intensity_profile(&mut self, line_points: &[(i32, i32)]) -> Option<IntensityProfile> {
-        if self.channels.is_empty() {
-            return None;
-        }
-    
-        if let Some(img) = self.get_composite_image() {
-            // Store all line points for later redrawing
-            let points = line_points.to_vec();
-            println!("Creating line profile annotation with {} points", points.len());
-            
-            let annotation = Annotation {
-                name: format!("Line Profile {}", self.annotations.len() + 1),
-                image: img.clone(),
-                annotation_type: AnnotationType::Measurement {
-                    length: points.len() as f32,
-                    unit: "px".to_string(),
-                },
-                visible: true,
-                coordinates: points,  // Store all points for redrawing
-            };
-            
-            self.annotations.push(annotation);
-            println!("Line profile annotation added");
-        }
-    
-        Some(IntensityProfile::new(line_points, &self.channels))
     }
 
     pub fn set_measurement_tool(&mut self, tool: MeasurementTool) {
@@ -574,7 +665,7 @@ impl ScientificState {
             println!("Toggled visibility for annotation {}: {}", index, annotation.visible);
         }
     }
-
+    
     pub fn get_visible_annotations(&self) -> Vec<&Annotation> {
         self.annotations.iter()
             .filter(|a| a.visible)
@@ -606,4 +697,43 @@ impl ScientificState {
     }
 
 
+}
+// Implement CellAnalysisState trait for ScientificState
+impl CellAnalysisState for ScientificState {
+    fn init_cell_analysis(&mut self, calibration_scale: f64, unit: String) {
+        self.cell_analysis_tool = Some(CellAnalysisTool::new(calibration_scale, unit));
+    }
+
+    fn start_cell_analysis(&mut self, mode: CellMeasurementMode) {
+        self.measurement_mode = mode;
+        if let Some(tool) = &mut self.cell_analysis_tool {
+            tool.set_mode(mode);
+            tool.activate();
+        }
+    }
+
+    fn stop_cell_analysis(&mut self) {
+        if let Some(tool) = &mut self.cell_analysis_tool {
+            tool.deactivate();
+        }
+    }
+
+    fn is_analyzing_cells(&self) -> bool {
+        self.cell_analysis_tool
+            .as_ref()
+            .map_or(false, |tool| tool.is_active())
+    }
+
+    fn get_cell_statistics(&self) -> Option<CellStatistics> {
+        self.cell_analysis_tool
+            .as_ref()
+            .and_then(|tool| tool.get_statistics())
+    }
+    fn get_measurements(&self) -> Option<Vec<CellMeasurement>> {
+        if let Some(tool) = &self.cell_analysis_tool {
+            Some(tool.get_measurements().to_vec())
+        } else {
+            None
+        }
+    }
 }

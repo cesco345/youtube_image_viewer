@@ -7,6 +7,7 @@ pub mod ui;
 pub mod types;
 pub mod rendering;
 pub mod reporting;
+pub mod visualization;
 
 pub use layers::{Channel, Annotation, AnnotationType, Metadata};
 pub use analysis::{IntensityProfile, ColocalizationAnalysis};
@@ -14,3 +15,4 @@ pub use calibration::SpatialCalibration;
 pub use state::ScientificState;
 pub use types::{LegendPosition, ROIShape, ROITool, MeasurementTool};
 pub use reporting::CalibrationReport;
+pub use visualization::CellVisualizer;

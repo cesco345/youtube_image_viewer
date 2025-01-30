@@ -69,7 +69,7 @@ pub fn start_interactive_profile(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<
                 println!("Release event - {} points collected", points.len());
                 if points.len() >= 2 {
                     let mut state_ref = state.borrow_mut();
-                    if let Some(profile) = state_ref.scientific_state.get_intensity_profile(&points) {
+                    if let Some(profile) = state_ref.scientific_state.get_roi_intensity_profile(&points) {
                         println!("Profile calculated, showing dialog");
                         crate::scientific::ui::show_profile_dialog(&profile);
                     }
