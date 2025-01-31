@@ -35,6 +35,10 @@ pub struct ScientificState {
     measurements: Vec<CellMeasurement>,
     pub base_image: Option<RgbImage>,
     pub measurement_mode: CellMeasurementMode,
+    pub show_preview_layer: bool,  // Add this field
+    pub preview_layer: Option<RgbImage>,
+    pub show_base_image: bool, 
+    pub show_drawing_layer: bool,
 
 }
 // implementation block for ScientificState
@@ -61,8 +65,26 @@ impl ScientificState {
             measurements: Vec::new(),
             base_image: None,
             measurement_mode: CellMeasurementMode::Single,
+            show_preview_layer: true,
+            preview_layer: None,
+            show_base_image: true,
+            show_drawing_layer: true,
 
         }
+    }
+    // Add toggle method
+    pub fn toggle_drawing_layer(&mut self) {
+        self.show_drawing_layer = !self.show_drawing_layer;
+        println!("Drawing layer display toggled: {}", self.show_drawing_layer);
+    }
+    pub fn toggle_preview_layer(&mut self) {
+        self.show_preview_layer = !self.show_preview_layer;
+        println!("Preview layer toggled: {}", self.show_preview_layer);
+    }
+    // Add toggle method
+    pub fn toggle_base_image(&mut self) {
+        self.show_base_image = !self.show_base_image;
+        println!("Base image display toggled: {}", self.show_base_image);
     }
     // Add this method to get measurements
     pub fn get_measurements(&self) -> Option<Vec<CellMeasurement>> {
@@ -77,19 +99,30 @@ impl ScientificState {
     }
     pub fn store_base_image(&mut self, image: RgbImage) {
         println!("Storing base image in scientific state");
-        // Store the base image
-        self.base_image = Some(image.clone());
         
-        // Create and store a default channel for the image
+        // Get the image dimensions
+        let width = image.data_w();
+        let height = image.data_h();
+        
+        // Create a base image with exact same dimensions
+        let base_image = RgbImage::new(
+            &image.to_rgb_data(),
+            width,
+            height,
+            fltk::enums::ColorDepth::Rgb8
+        ).unwrap();
+        
+        self.base_image = Some(base_image);
+        
+        // Create channel with same dimensions
         println!("Creating default channel for base image");
         let channel = Channel::new(
             "Base".to_string(),
             image,
-            550.0,  // Default wavelength for visible light
-            (255, 255, 255)  // White color for default channel
+            550.0,
+            (255, 255, 255)
         );
         
-        // Clear existing channels and add the new one
         self.channels.clear();
         self.channels.push(channel);
         println!("Channel created and stored. Total channels: {}", self.channels.len());
@@ -139,26 +172,6 @@ impl ScientificState {
         if self.channels.is_empty() {
             println!("No channels available for intensity profile");
             return None;
-        }
-    
-        // Get the composite image for the annotation
-        if let Some(img) = self.get_composite_image() {
-            println!("Creating ROI annotation with {} points", points.len());
-            
-            // Create and store the annotation with the actual image
-            let annotation = Annotation {
-                name: format!("ROI {}", self.annotations.len() + 1),
-                image: img.clone(),  // Use the actual composite image
-                annotation_type: AnnotationType::ROI {
-                    color: (0, 255, 0),
-                    line_width: 2,
-                },
-                visible: true,
-                coordinates: points.to_vec(),
-            };
-            
-            self.annotations.push(annotation);
-            println!("ROI annotation added");
         }
     
         println!("Creating intensity profile with {} points", points.len());
@@ -266,30 +279,47 @@ impl ScientificState {
     }
 
     pub fn get_composite_image(&self) -> Option<RgbImage> {
-        // Get dimensions from first channel
-        let (width, height) = if let Some(first) = self.channels.first() {
-            (first.image.data_w(), first.image.data_h())
+        // Get dimensions from base image
+        let (width, height) = if let Some(base_img) = &self.base_image {
+            (base_img.data_w(), base_img.data_h())
         } else {
             return None;
         };
-    
-        // Start with a copy of the base image
-        let mut composite = if let Some(base_img) = &self.base_image {
-            base_img.to_rgb_data()
-        } else {
-            return None;
-        };
-    
-        // Only draw annotations if show_overlay is true
+
+        // Start with a new empty image of the same dimensions
+        let mut composite = vec![0u8; (width * height * 3) as usize];
+
+        // Copy base image data if it exists
+        if let Some(base_img) = &self.base_image {
+            composite.copy_from_slice(&base_img.to_rgb_data());
+        }
+
+        // Only draw overlays if show_overlay is true
         if self.show_overlay {
             // Draw all persistent annotations
             for annotation in self.annotations.iter().filter(|a| a.visible) {
                 self.overlay_annotation(&mut composite, annotation);
             }
         }
-    
-        Some(RgbImage::new(&composite, width, height, fltk::enums::ColorDepth::Rgb8).unwrap())
+
+        // Store the current composite as preview layer
+        if let Some(preview) = &self.preview_layer {
+            if self.show_preview_layer {
+                let preview_data = preview.to_rgb_data();
+                composite.copy_from_slice(&preview_data);
+            }
+        }
+
+        // Create new RgbImage with same dimensions as base
+        Some(RgbImage::new(
+            &composite,
+            width,
+            height,
+            fltk::enums::ColorDepth::Rgb8
+        ).unwrap())
     }
+
+
 
     pub fn blend_channel(&self, composite: &mut Vec<u8>, channel: &Channel) {
         let data = channel.image.to_rgb_data();
@@ -400,7 +430,16 @@ impl ScientificState {
     }
 
     fn overlay_annotation(&self, composite: &mut Vec<u8>, annotation: &Annotation) {
-        let (width, height) = (self.channels[0].image.data_w(), self.channels[0].image.data_h());
+        // Only proceed if the annotation is visible
+        if !annotation.visible {
+            return;
+        }
+        
+        let (width, height) = if let Some(base_img) = &self.base_image {
+            (base_img.data_w(), base_img.data_h())
+        } else {
+            return;
+        };
         
         match &annotation.annotation_type {
             AnnotationType::ROI { color, line_width } => {

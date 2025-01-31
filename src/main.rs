@@ -205,6 +205,45 @@ fn main() {
     let state_metadata = state.clone();
     let frame_legend = frame.clone();
     let state_legend = state.clone();
+    let frame_preview_layer = frame.clone();
+let state_preview_layer = state.clone();
+menu.add(
+    "&Scientific/&View/Toggle Preview Layer",
+    Shortcut::None,
+    MenuFlag::Normal,
+    move |_| {
+        if let Ok(mut state_ref) = state_preview_layer.try_borrow_mut() {
+            state_ref.scientific_state.toggle_preview_layer();
+            frame_preview_layer.borrow_mut().redraw();
+        }
+    }
+);
+let frame_base_image = frame.clone();
+let state_base_image = state.clone();
+menu.add(
+    "&Scientific/&View/Toggle Base Image",
+    Shortcut::None,
+    MenuFlag::Normal,
+    move |_| {
+        if let Ok(mut state_ref) = state_base_image.try_borrow_mut() {
+            state_ref.scientific_state.toggle_base_image();
+            frame_base_image.borrow_mut().redraw();
+        }
+    }
+);
+let frame_drawing = frame.clone();
+let state_drawing = state.clone();
+menu.add(
+    "&Scientific/&View/Toggle Drawing Layer",
+    Shortcut::None,
+    MenuFlag::Normal,
+    move |_| {
+        if let Ok(mut state_ref) = state_drawing.try_borrow_mut() {
+            state_ref.scientific_state.toggle_drawing_layer();
+            frame_drawing.borrow_mut().redraw();
+        }
+    }
+);
 
     menu.add("&Scientific/&Channel Manager", Shortcut::None, MenuFlag::Normal, move |_| {
         scientific::ui::show_channel_manager(&frame_channels, &state_channels);
@@ -230,6 +269,7 @@ fn main() {
     menu.add("&Scientific/&Metadata/Edit Properties", Shortcut::None, MenuFlag::Normal, move |_| {
         scientific::tools::interactive::start_metadata_editor(&frame_metadata, &state_metadata);
     });
+    
 
     // Filters Preview Toggle
     let frame_preview = frame.clone();
