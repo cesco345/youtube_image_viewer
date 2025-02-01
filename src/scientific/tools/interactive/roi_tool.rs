@@ -245,7 +245,7 @@ pub fn start_interactive_roi(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                     }
                     points
                 };
-
+            
                 if points.len() >= 3 {
                     if let Ok(mut state_ref) = state_handle.try_borrow_mut() {
                         let (width, height) = if let Some(img) = &state_ref.image {
@@ -253,14 +253,31 @@ pub fn start_interactive_roi(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                         } else {
                             (1, 1)
                         };
-
+            
+                        // Common functionality - always create and persist ROI
+                        let roi_tool = ROITool::new(
+                            ROIShape::Polygon { points: points.clone() },
+                            (255, 0, 0),
+                            2
+                        );
+                        
+                        if let Some(cell_tool) = &mut state_ref.scientific_state.cell_analysis_tool {
+                            let annotation = cell_tool.create_roi_annotation(&points, width, height);
+                            state_ref.scientific_state.add_annotation(annotation);
+                        }
+                        
+                        state_ref.scientific_state.set_roi_tool(roi_tool);
+            
+                        // Always show intensity profile regardless of mode
+                        if let Some(profile) = state_ref.scientific_state.get_roi_intensity_profile(&points) {
+                            crate::scientific::ui::show_profile_dialog(&profile);
+                        }
+            
+                        // Additional functionality for cell analysis mode
                         if state_ref.scientific_state.is_analyzing_cells() {
-                            let profile = state_ref.scientific_state.get_roi_intensity_profile(&points);
-                            if let Some(prof) = profile {
+                            if let Some(profile) = state_ref.scientific_state.get_roi_intensity_profile(&points) {
                                 if let Some(cell_tool) = &mut state_ref.scientific_state.cell_analysis_tool {
-                                    cell_tool.process_measurement(prof, &points);
-                                    let annotation = cell_tool.create_roi_annotation(&points, width, height);
-                                    state_ref.scientific_state.add_annotation(annotation);
+                                    cell_tool.process_measurement(profile, &points);
                                     
                                     if let Some(measurements) = state_ref.scientific_state.get_measurements() {
                                         if let Some(latest_measurement) = measurements.last() {
@@ -271,7 +288,7 @@ pub fn start_interactive_roi(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                                             );
                                         }
                                     }
-
+            
                                     if state_ref.scientific_state.get_measurement_mode() == CellMeasurementMode::Batch {
                                         if let Some(all_measurements) = state_ref.scientific_state.get_measurements() {
                                             if all_measurements.len() > 1 {
@@ -285,19 +302,6 @@ pub fn start_interactive_roi(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<Imag
                                     }
                                 }
                             }
-                        } else {
-                            let roi_tool = ROITool::new(
-                                ROIShape::Polygon { points: points.clone() },
-                                (255, 0, 0),
-                                2
-                            );
-                            
-                            if let Some(cell_tool) = &mut state_ref.scientific_state.cell_analysis_tool {
-                                let annotation = cell_tool.create_roi_annotation(&points, width, height);
-                                state_ref.scientific_state.add_annotation(annotation);
-                            }
-                            
-                            state_ref.scientific_state.set_roi_tool(roi_tool);
                         }
                     }
                 }

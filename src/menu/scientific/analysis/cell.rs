@@ -23,7 +23,7 @@ pub fn setup_cell_analysis_menu(menu: &mut MenuBar, frame: &Rc<RefCell<Frame>>, 
     let frame_start = frame.clone();
     let state_start = state.clone();
     menu.add(
-        "&Scientific/&Analysis/Cell Analysis/Start Analysis",
+        "&Scientific/&Analysis/Area Analysis/Start Analysis",
         Shortcut::None,
         MenuFlag::Normal,
         move |_| {
@@ -69,7 +69,7 @@ pub fn setup_cell_analysis_menu(menu: &mut MenuBar, frame: &Rc<RefCell<Frame>>, 
     let frame_batch = frame.clone();
     let state_batch = state.clone();
     menu.add(
-        "&Scientific/&Analysis/Cell Analysis/Start Batch Analysis",
+        "&Scientific/&Analysis/Area Analysis/Start Batch Analysis",
         Shortcut::None,
         MenuFlag::Normal,
         move |_| {
@@ -92,7 +92,7 @@ pub fn setup_cell_analysis_menu(menu: &mut MenuBar, frame: &Rc<RefCell<Frame>>, 
     // Statistics menu item
     let state_stats = state.clone();
     menu.add(
-        "&Scientific/&Analysis/Cell Analysis/Show Statistics",
+        "&Scientific/&Analysis/Area Analysis/Show Statistics",
         Shortcut::None,
         MenuFlag::Normal,
         move |_| {
@@ -109,7 +109,7 @@ pub fn setup_cell_analysis_menu(menu: &mut MenuBar, frame: &Rc<RefCell<Frame>>, 
     // Export menu item
     let state_export = state.clone();
     menu.add(
-        "&Scientific/&Analysis/Cell Analysis/Export Analysis",
+        "&Scientific/&Analysis/Area Analysis/Export Analysis",
         Shortcut::None,
         MenuFlag::Normal,
         move |_| {
@@ -127,7 +127,7 @@ pub fn setup_cell_analysis_menu(menu: &mut MenuBar, frame: &Rc<RefCell<Frame>>, 
     let frame_stop = frame.clone();
     let state_stop = state.clone();
     menu.add(
-        "&Scientific/&Analysis/Cell Analysis/Stop Analysis",
+        "&Scientific/&Analysis/Area Analysis/Stop Analysis",
         Shortcut::None,
         MenuFlag::Normal,
         move |_| {

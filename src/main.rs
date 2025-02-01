@@ -18,6 +18,7 @@ use utils::MENU_HEIGHT;
 use crate::menu::scientific::analysis::cell::setup_cell_analysis_menu;
 use crate::scientific::tools::interactive::cell_analysis_tool::CellAnalysisState;
 
+
 fn main() {
     let app = app::App::default().with_scheme(app::Scheme::Gtk);
     let theme = ColorTheme::new(color_themes::DARK_THEME);
@@ -258,9 +259,10 @@ menu.add(
         scientific::tools::handlers::handle_toggle_scale_legend(&frame_legend, &state_legend);
     });
 
-    menu.add("&Scientific/&Measurements/ROI", Shortcut::None, MenuFlag::Normal, move |_| {
-        scientific::tools::interactive::start_interactive_roi(&frame_roi, &state_roi);
-    });
+    // Change this line in main.rs
+menu.add("&Scientific/&Measurements/ROI", Shortcut::None, MenuFlag::Normal, move |_| {
+    scientific::tools::interactive::start_interactive_roi(&frame_roi, &state_roi);
+});
 
     menu.add("&Scientific/&Measurements/Line Profile", Shortcut::None, MenuFlag::Normal, move |_| {
         scientific::tools::interactive::start_interactive_profile(&frame_profile, &state_profile);

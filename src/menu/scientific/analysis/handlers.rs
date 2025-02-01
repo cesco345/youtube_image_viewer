@@ -16,6 +16,7 @@ use crate::{
     }
 };
 
+
 pub fn handle_cell_analysis(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) {
     println!("Starting cell analysis...");
     
