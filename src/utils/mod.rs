@@ -2,6 +2,7 @@
 
 pub mod image; 
 pub mod template_utils;
+pub mod image_data;
 
 pub use image::*;
 

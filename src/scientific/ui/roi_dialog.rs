@@ -1,3 +1,4 @@
+//src/scientific/ui/roi_dialog.rs
 use fltk::{
     window::Window,
     button::Button,
@@ -14,21 +15,21 @@ use crate::scientific::types::{ROITool, ROIShape}; // Import from types module
 pub fn show_roi_dialog(frame: &Rc<RefCell<Frame>>, state: &Rc<RefCell<ImageState>>) -> bool {
     let window = Rc::new(RefCell::new(
         Window::default()
-            .with_size(300, 200)
+            .with_size(300, 350)
             .with_label("ROI Tool")
     ));
     
     window.borrow_mut().make_modal(true);
 
-    let mut pack = Pack::new(10, 10, 280, 180, "");
-    pack.set_spacing(10);
+    let mut pack = Pack::new(10, 10, 280, 280, "");
+    pack.set_spacing(15);
 
-    let mut shape_choice = Choice::new(10, 10, 150, 25, "Shape:");
+    let mut shape_choice = Choice::new(10, 10, 260, 25, "Shape:");
     shape_choice.add_choice("Rectangle|Ellipse|Polygon|Line");
     shape_choice.set_value(0); // Default to Rectangle
     
-    let mut width_input = FloatInput::new(120, 45, 70, 25, "Width:");
-    let mut height_input = FloatInput::new(120, 80, 70, 25, "Height:");
+    let mut width_input = FloatInput::new(80, 45, 190, 25, "Width:");
+    let mut height_input = FloatInput::new(80, 80, 190, 25, "Height:");
     width_input.set_value("100");  // Default width
     height_input.set_value("100"); // Default height
     

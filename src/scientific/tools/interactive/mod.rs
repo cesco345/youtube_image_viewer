@@ -5,6 +5,10 @@ pub mod line_profile_tool;
 pub mod measurement_tool;
 pub mod metadata_tool;
 pub mod scale_tool;
+pub mod roi {
+    pub mod measurements;
+    pub mod properties;
+}
 
 // Re-export the public interface
 pub use roi_tool::*;

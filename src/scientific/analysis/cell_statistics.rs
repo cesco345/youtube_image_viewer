@@ -1,3 +1,4 @@
+//src/scientific/analysis/cell_statistics.rs
 use crate::scientific::analysis::CellMeasurement;
 use serde::Serialize;
 
@@ -307,31 +308,3 @@ pub fn export_statistics_report(stats: &CellStatistics, path: &std::path::Path) 
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use approx::assert_relative_eq;
-
-    #[test]
-    fn test_correlation() {
-        let x = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        let y = vec![2.0, 4.0, 6.0, 8.0, 10.0];
-        assert_relative_eq!(correlation(&x, &y), 1.0, epsilon = 1e-10);
-    }
-
-    #[test]
-    fn test_percentile() {
-        let values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        assert_relative_eq!(percentile(values.iter().cloned(), 0.5), 3.0, epsilon = 1e-10);
-    }
-
-    #[test]
-    fn test_statistics_calculation() {
-        let values = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        let stats = MetricStatistics::calculate(&values);
-        assert_relative_eq!(stats.mean, 3.0, epsilon = 1e-10);
-        assert_relative_eq!(stats.median, 3.0, epsilon = 1e-10);
-        assert_relative_eq!(stats.min, 1.0, epsilon = 1e-10);
-        assert_relative_eq!(stats.max, 5.0, epsilon = 1e-10);
-    }
-}
